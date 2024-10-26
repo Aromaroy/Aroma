@@ -9,7 +9,7 @@ import config
 from Aroma import app
 from Aroma.misc import _boot_
 from Aroma.plugins.sudo.sudoers import sudoers_list
-from Yumi.utils.database import (
+from Aroma.utils.database import (
     add_served_chat,
     add_served_user,
     blacklisted_chats,
