@@ -15,7 +15,7 @@ from config import BANNED_USERS, PING_IMG_URL
 async def ping_com(client, message: Message, _):
     start = datetime.now()
     response = await message.reply(f"{app.mention} ɪs ᴘɪɴɢɪɴɢ...<a href='{PING_IMG_URL}>.</a>'")
-    pytgping = await Mukesh.ping()
+    pytgping = await Anony.ping()
     UP, CPU, RAM, DISK = await bot_sys_stats()
     resp = (datetime.now() - start).microseconds / 1000
     await response.edit_text(
