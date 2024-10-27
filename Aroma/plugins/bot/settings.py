@@ -27,7 +27,7 @@ from Aroma.utils.database import (
 )
 from Aroma.utils.decorators.admins import ActualAdminCB
 from Aroma.utils.decorators.language import language, languageCB
-from AnonXMusic.utils.inline.settings import (
+from Aroma.utils.inline.settings import (
     auth_users_markup,
     playmode_users_markup,
     setting_markup,
