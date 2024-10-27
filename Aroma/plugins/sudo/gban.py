@@ -7,7 +7,7 @@ from pyrogram.types import Message
 from Aroma import app
 from Aroma.misc import SUDOERS
 from Aroma.utils import get_readable_time
-from AnonXMusic.utils.database import (
+from Aroma.utils.database import (
     add_banned_user,
     get_banned_count,
     get_banned_users,
