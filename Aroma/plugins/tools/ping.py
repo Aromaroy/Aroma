@@ -1,7 +1,7 @@
 from pyrogram.types import Message
 
 from Aroma import app
-from Aroma.core.call import Mukesh
+from Aroma.core.call import Anony
 from Aroma.utils import bot_sys_stats
 from Aroma.utils.decorators.language import language
 from Aroma.utils.inline import supp_markup
