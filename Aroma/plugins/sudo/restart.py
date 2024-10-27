@@ -12,7 +12,7 @@ from pyrogram import filters
 import config
 from Aroma import app
 from Aroma.misc import HAPP, SUDOERS, XCB
-from AnonXMusic.utils.database import (
+from Aroma.utils.database import (
     get_active_chats,
     remove_active_chat,
     remove_active_video_chat,
