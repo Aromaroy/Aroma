@@ -2,6 +2,9 @@ from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from Aroma import app
 
+# Temporary database to hold user permissions
+permissions_db = {}
+
 @app.on_message(filters.command('promote') & filters.group)
 def promote_user(client, message):
     chat_id = message.chat.id
@@ -29,7 +32,7 @@ def promote_user(client, message):
         if user_member.status != "administrator":
             client.send_message(chat_id, "You need to be an administrator to use this command.")
             return
-        
+
         if not user_member.privileges.can_promote_members:
             client.send_message(chat_id, "You do not have permission to promote other users.")
             return
@@ -86,6 +89,9 @@ def promote_user(client, message):
         callback_data = f"promote_toggle_{perm_code}_{target_user_id}" if getattr(user_member.privileges, perm_code, False) else f"promote_locked_{perm_code}"
         markup.add(InlineKeyboardButton(button_text, callback_data=callback_data))
 
+    # Store the target user permissions in the temporary database
+    permissions_db[target_user_id] = {perm: False for perm in permissions.values()}
+
     client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
 
 @app.on_callback_query(filters.regex(r"promote_"))
@@ -103,13 +109,16 @@ def handle_permission_toggle(client, callback_query: CallbackQuery):
             client.answer_callback_query(callback_query.id, "You need admin rights to perform this action.")
             return
 
-        # Implement actual permission toggling logic here.
+        # Update permissions in the temporary database
         if action == "toggle":
-            # Example: Here you would implement the logic to actually toggle the permission.
+            current_permission = permissions_db[target_user_id].get(perm_code, False)
+            permissions_db[target_user_id][perm_code] = not current_permission
             client.answer_callback_query(callback_query.id, f"Toggled {perm_code} for user {target_user_id}.")
         elif action == "locked":
             client.answer_callback_query(callback_query.id, "You don't have permission to grant this.")
-
+    
     except Exception as e:
         client.answer_callback_query(callback_query.id, "Error retrieving your status.")
         print(f"Error retrieving user member status in callback: {e}")
+
+# You can implement a function to finalize the promotion and apply the permissions stored in permissions_db when needed.
