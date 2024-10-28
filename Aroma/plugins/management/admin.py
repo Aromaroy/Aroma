@@ -8,6 +8,7 @@ def promote_user(client, message):
     user_id = message.from_user.id
     bot_user = client.get_me()
 
+    # Determine target user ID
     if message.reply_to_message:
         target_user_id = message.reply_to_message.from_user.id
     else:
@@ -16,31 +17,30 @@ def promote_user(client, message):
         except (IndexError, ValueError):
             target_username = message.command[1].replace('@', '') if len(message.command) > 1 else None
             if target_username:
-                target_user = client.get_chat_member(chat_id, target_username)
-                if not target_user:
+                try:
+                    target_user = client.get_chat_member(chat_id, target_username)
+                    target_user_id = target_user.user.id
+                except Exception:
                     client.send_message(chat_id, "User not found.")
                     return
-                target_user_id = target_user.user.id
             else:
                 client.send_message(chat_id, "Please specify a user to promote by username, user ID, or replying to their message.")
                 return
 
+    # Check bot's permissions
     bot_member = client.get_chat_member(chat_id, bot_user.id)
     bot_can_promote = getattr(bot_member.privileges, 'can_promote_members', False)
     if not bot_can_promote:
         client.send_message(chat_id, "I don't have permission to promote members.")
         return
 
+    # Check user's admin status
     user_member = client.get_chat_member(chat_id, user_id)
-    
+    user_can_promote = getattr(user_member.privileges, 'can_promote_members', False) if user_member.status == "administrator" else False
+
     print(f"Bot's can_promote_members: {bot_can_promote}")
     print(f"User's admin status: {user_member.status}")
-
-    privileges = user_member.privileges.__dict__
-    for perm, value in privileges.items():
-        print(f"{perm}: {value}")
-
-    user_can_promote = getattr(user_member.privileges, 'can_promote_members', False) if user_member.status == "administrator" else False
+    print(f"User can promote: {user_can_promote}, Privileges: {user_member.privileges}")
 
     if not user_can_promote:
         client.send_message(chat_id, "You need admin rights with permission to add admins to use this command.")
@@ -51,6 +51,7 @@ def promote_user(client, message):
         client.send_message(chat_id, "This user is already promoted by someone else.")
         return
 
+    # Create InlineKeyboard for permissions
     markup = InlineKeyboardMarkup(row_width=2)
     permissions = {
         "Can Change Info": "can_change_info",
@@ -78,9 +79,17 @@ def handle_permission_toggle(client, callback_query: CallbackQuery):
     data = callback_query.data.split("_")
     action = data[1]
     perm_code = data[2]
-    target_user_id = data[3]
+    target_user_id = int(data[3])
+
+    user_id = callback_query.from_user.id
+    user_member = client.get_chat_member(callback_query.message.chat.id, user_id)
+
+    if user_member.status != "administrator":
+        client.answer_callback_query(callback_query.id, "You need admin rights to perform this action.")
+        return
 
     if action == "toggle":
+        # Here, you would implement the actual permission toggling logic
         client.answer_callback_query(callback_query.id, f"Toggled {perm_code} for user {target_user_id}")
     elif action == "locked":
         client.answer_callback_query(callback_query.id, "You don't have permission to grant this.")
