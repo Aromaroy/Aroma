@@ -13,7 +13,8 @@ def promote_user(client, message):
     # Check bot's permissions
     try:
         bot_member = client.get_chat_member(chat_id, bot_user.id)
-        if not bot_member.privileges.can_promote_members:
+        bot_can_promote = getattr(bot_member.privileges, 'can_promote_members', False)
+        if not bot_can_promote:
             client.send_message(chat_id, "I don't have permission to promote members.")
             return
     except Exception as e:
@@ -30,7 +31,10 @@ def promote_user(client, message):
             client.send_message(chat_id, "You need to be an administrator to use this command.")
             return
         
-        if not user_member.privileges.can_promote_members:
+        user_can_promote = getattr(user_member.privileges, 'can_promote_members', False)
+        print(f"User can promote: {user_can_promote}")
+
+        if not user_can_promote:
             client.send_message(chat_id, "You do not have permission to promote other users.")
             return
 
@@ -40,7 +44,6 @@ def promote_user(client, message):
         return
 
     # Determine target user ID
-    target_user_id = None
     if message.reply_to_message:
         target_user_id = message.reply_to_message.from_user.id
     else:
@@ -110,7 +113,6 @@ def handle_permission_toggle(client, callback_query: CallbackQuery):
 
         # Implement actual permission toggling logic here.
         if action == "toggle":
-            # Here you would include the logic to change the permission
             client.answer_callback_query(callback_query.id, f"Toggled {perm_code} for user {target_user_id}")
         elif action == "locked":
             client.answer_callback_query(callback_query.id, "You don't have permission to grant this.")
@@ -118,15 +120,3 @@ def handle_permission_toggle(client, callback_query: CallbackQuery):
     except Exception as e:
         client.answer_callback_query(callback_query.id, "Error retrieving your status.")
         print(f"Error retrieving user member status in callback: {e}")
-
-@app.on_message(filters.command('checkadmin') & filters.group)
-def check_admin(client, message):
-    user_id = message.from_user.id
-    chat_id = message.chat.id
-
-    try:
-        user_member = client.get_chat_member(chat_id, user_id)
-        client.send_message(chat_id, f"User ID: {user_id}, Status: {user_member.status}")
-    except Exception as e:
-        client.send_message(chat_id, "Error retrieving your status.")
-        print(f"Error retrieving user member status: {e}")
