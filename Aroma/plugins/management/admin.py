@@ -1,130 +1,104 @@
-from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
-from Aroma import app
 import logging
-
+from Aroma import app 
+from pyrogram import Client, filters
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 logging.basicConfig(level=logging.INFO)
 
-@app.on_message(filters.command('promote') & filters.group)
-def promote_user(client, message):
-    chat_id = message.chat.id
-    user_id = message.from_user.id
-    bot_user = client.get_me()
+PERMISSION_LIST = [
+    ("can_change_info", "Change Group Info"),
+    ("can_post_messages", "Post Messages"),
+    ("can_edit_messages", "Edit Messages"),
+    ("can_delete_messages", "Delete Messages"),
+    ("can_invite_users", "Invite Users"),
+    ("can_restrict_members", "Restrict Members"),
+    ("can_pin_messages", "Pin Messages"),
+    ("can_promote_members", "Promote Members"),
+]
 
-    try:
-        # Check bot's member status
-        bot_member = client.get_chat_member(chat_id, bot_user.id)
-        logging.info(f"Bot member status: {bot_member.status}, privileges: {bot_member.privileges}")
-
-        if bot_member.status not in ['administrator', 'creator']:
-            client.send_message(chat_id, "I need to be an admin to promote members.")
-            return
-
-        if not bot_member.privileges.can_promote_members:
-            client.send_message(chat_id, "I don't have permission to promote members.")
-            return
-
-        # Check user's member status
-        user_member = client.get_chat_member(chat_id, user_id)
-        logging.info(f"User {user_id} status: {user_member.status}, privileges: {user_member.privileges}")
-
-        if user_member.status != "administrator":
-            client.send_message(chat_id, "You need to be an administrator to use this command.")
-            return
-
-        if not user_member.privileges.can_promote_members:
-            client.send_message(chat_id, "You do not have permission to promote other users.")
-            return
-
-    except Exception as e:
-        logging.error(f"Error checking permissions: {e}")
-        client.send_message(chat_id, "An error occurred while checking permissions.")
+# Command to promote a user
+@app.on_message(filters.command("promote") & filters.group)
+async def promote_user(client, message):
+    if not message.chat.permissions.can_promote_members:
+        await message.reply("I need to be an admin to promote members.")
         return
 
-    target_user_id = get_target_user_id(client, message, chat_id)
+    user = message.from_user
+    if not user or not user.is_admin:
+        await message.reply("You need to be an administrator to use this command.")
+        return
+
+    target_user_id = await get_target_user_id(message)
     if target_user_id is None:
-        client.send_message(chat_id, "Please specify a user to promote by username, user ID, or replying to their message.")
+        await message.reply("Please specify a user to promote by username, user ID, or replying to their message.")
         return
 
-    if not is_user_promotable(client, chat_id, target_user_id):
-        client.send_message(chat_id, "This user is already an administrator or cannot be promoted.")
+    if not await is_user_promotable(client, message.chat.id, target_user_id):
+        await message.reply("This user is already an administrator or cannot be promoted.")
         return
 
-    display_permission_buttons(client, chat_id, user_member, target_user_id)
+    await display_permission_buttons(client, message.chat.id, user.id, target_user_id)
 
-def get_target_user_id(client, message, chat_id):
+async def get_target_user_id(message):
     if message.reply_to_message:
         return message.reply_to_message.from_user.id
-    else:
+    elif message.command and len(message.command) > 1:
         try:
-            return int(message.command[1])
-        except (IndexError, ValueError):
-            target_username = message.command[1].replace('@', '') if len(message.command) > 1 else None
-            if target_username:
-                try:
-                    target_user = client.get_chat_member(chat_id, target_username)
-                    return target_user.user.id
-                except Exception as e:
-                    logging.error(f"Error retrieving target user by username: {e}")
-                    return None
+            username = message.command[1]
+            user = await app.get_users(username)
+            return user.id
+        except Exception as e:
+            logging.error(f"Error getting user by username: {e}")
             return None
+    return None
 
-def is_user_promotable(client, chat_id, target_user_id):
-    try:
-        target_user_member = client.get_chat_member(chat_id, target_user_id)
-        logging.info(f"Target user {target_user_id} status: {target_user_member.status}")
-        return target_user_member.status not in ['administrator', 'creator']
-    except Exception as e:
-        logging.error(f"Error retrieving target user member status: {e}")
-        return False
+async def is_user_promotable(client, chat_id, user_id):
+    member = await client.get_chat_member(chat_id, user_id)
+    return not member.status in ("administrator", "creator")
 
-def display_permission_buttons(client, chat_id, user_member, target_user_id):
-    markup = InlineKeyboardMarkup(row_width=2)
-    permissions = {
-        "Can Change Info": "can_change_info",
-        "Can Delete Messages": "can_delete_messages",
-        "Can Invite Users": "can_invite_users",
-        "Can Restrict Members": "can_restrict_members",
-        "Can Pin Messages": "can_pin_messages",
-        "Can Promote Members": "can_promote_members",
-    }
+async def display_permission_buttons(client, chat_id, admin_id, target_user_id):
+    admin_permissions = await client.get_chat_member(chat_id, admin_id)
+    
+    keyboard = []
+    for perm, perm_name in PERMISSION_LIST:
+        if getattr(admin_permissions.permissions, perm):
+            keyboard.append([InlineKeyboardButton(perm_name, callback_data=f"set_perm_{perm}_{target_user_id}")])
+        else:
+            keyboard.append([InlineKeyboardButton(f"{perm_name} (You lack this permission)", callback_data="no_permission")])
 
-    for perm_name, perm_code in permissions.items():
-        button_text = f"{perm_name} ✅" if getattr(user_member.privileges, perm_code, False) else f"🔒 {perm_name}"
-        callback_data = f"promote_toggle_{perm_code}_{target_user_id}" if getattr(user_member.privileges, perm_code, False) else f"promote_locked_{perm_code}"
-        markup.add(InlineKeyboardButton(button_text, callback_data=callback_data))
+    await client.send_message(chat_id, "Choose permissions to grant:", reply_markup=InlineKeyboardMarkup(keyboard))
 
-    client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
-
-@app.on_callback_query(filters.regex(r"promote_toggle_"))
-def handle_permission_toggle(client, callback_query: CallbackQuery):
-    data = callback_query.data.split("_")
-    perm_code = data[2]
-    target_user_id = int(data[3])
-    user_id = callback_query.from_user.id
+@app.on_callback_query(filters.regex(r"set_perm_(\w+)_(\d+)"))
+async def handle_permission_toggle(client, callback_query):
+    perm = callback_query.data.split("_")[1]
+    user_id = int(callback_query.data.split("_")[2])
     chat_id = callback_query.message.chat.id
 
+    # Try to grant the permission
     try:
-        user_member = client.get_chat_member(chat_id, user_id)
-        logging.info(f"User {user_id} status: {user_member.status}, privileges: {user_member.privileges}")
-
-        if user_member.status != "administrator":
-            client.answer_callback_query(callback_query.id, "You need admin rights to perform this action.")
-            return
-
-        if not hasattr(user_member.privileges, perm_code):
-            client.answer_callback_query(callback_query.id, "Invalid permission.")
-            return
-
-        current_value = getattr(user_member.privileges, perm_code)
-
-        # Create the permission toggle
-        new_privileges = user_member.privileges._replace(**{perm_code: not current_value})
-        client.promote_chat_member(chat_id, target_user_id, privileges=new_privileges)
-        
-        action = "granted" if not current_value else "revoked"
-        client.answer_callback_query(callback_query.id, f"{perm_code.replace('_', ' ').capitalize()} {action}.")
-
+        if perm in [p[0] for p in PERMISSION_LIST]:
+            await client.promote_chat_member(chat_id, user_id, **{perm: True})
+            # Show the Save button after granting permission
+            save_keyboard = [
+                [InlineKeyboardButton("Save", callback_data=f"save_perm_{perm}_{user_id}")],
+            ]
+            await callback_query.answer(f"{perm.replace('_', ' ').title()} granted.")
+            await client.send_message(chat_id, f"{perm.replace('_', ' ').title()} granted to the user.", reply_markup=InlineKeyboardMarkup(save_keyboard))
+        else:
+            await callback_query.answer("Invalid permission.")
     except Exception as e:
-        logging.error(f"Error processing permission toggle: {e}")
-        client.answer_callback_query(callback_query.id, "An error occurred while processing your request.")
+        logging.error(f"Error granting permission: {e}")
+        await callback_query.answer("An error occurred while granting permissions.")
+
+@app.on_callback_query(filters.regex(r"save_perm_(\w+)_(\d+)"))
+async def handle_save_permission(callback_query):
+    perm = callback_query.data.split("_")[1]
+    user_id = int(callback_query.data.split("_")[2])
+    chat_id = callback_query.message.chat.id
+
+    # Confirmation alert message
+    await callback_query.answer("Permission has been granted and saved successfully!", show_alert=True)
+    await client.send_message(chat_id, f"Permission '{perm.replace('_', ' ').title()}' has been saved for the user.")
+
+@app.on_callback_query(filters.regex(r"no_permission"))
+async def handle_no_permission(callback_query):
+    await callback_query.answer("You don't have the permission to grant this right.")
