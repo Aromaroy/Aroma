@@ -1,5 +1,6 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from Aroma import bot
 import logging
 
 logging.basicConfig(level=logging.INFO)
