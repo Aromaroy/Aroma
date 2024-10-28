@@ -119,7 +119,7 @@ def handle_permission_toggle(client, callback_query: CallbackQuery):
         client.answer_callback_query(callback_query.id, "Error retrieving your status.")
         print(f"Error retrieving user member status in callback: {e}")
 
-@app.on_message(filters.command('check_admin') & filters.group)
+@app.on_message(filters.command('checkadmin') & filters.group)
 def check_admin(client, message):
     user_id = message.from_user.id
     chat_id = message.chat.id
