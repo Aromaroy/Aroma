@@ -27,12 +27,12 @@ def promote_user(client, message):
                 return
 
     bot_member = client.get_chat_member(chat_id, bot_user.id)
-    if not bot_member.can_promote_members:
+    if not getattr(bot_member.privileges, 'can_promote_members', False):
         client.send_message(chat_id, "I don't have permission to promote members.")
         return
 
     user_member = client.get_chat_member(chat_id, user_id)
-    if not user_member.status in ['administrator', 'creator'] or not user_member.can_promote_members:
+    if user_member.status not in ['administrator', 'creator'] or not getattr(user_member.privileges, 'can_promote_members', False):
         client.send_message(chat_id, "You need admin rights with permission to add admins to use this command.")
         return
 
@@ -52,7 +52,7 @@ def promote_user(client, message):
     }
 
     for perm_name, perm_code in permissions.items():
-        if getattr(user_member, perm_code, False):
+        if getattr(user_member.privileges, perm_code, False):
             button_text = f"{perm_name} ✅"
             callback_data = f"promote_toggle_{perm_code}_{target_user_id}"
         else:
@@ -62,6 +62,7 @@ def promote_user(client, message):
         markup.add(InlineKeyboardButton(button_text, callback_data=callback_data))
 
     client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
+
 
 @app.on_callback_query(filters.regex(r"promote_"))
 def handle_permission_toggle(client, callback_query: CallbackQuery):
