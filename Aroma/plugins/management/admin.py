@@ -1,6 +1,6 @@
 from telebot import TeleBot, types
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-from Aroma import bot
+from Aroma import app as bot
 
 @bot.message_handler(commands=['promote'])
 def promote_user(message):
