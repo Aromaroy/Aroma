@@ -8,8 +8,6 @@ def promote_user(client, message):
     user_id = message.from_user.id
     bot_user = client.get_me()
 
-    print("Received promote command.")
-
     try:
         bot_member = client.get_chat_member(chat_id, bot_user.id)
         if not bot_member.privileges.can_promote_members:
@@ -22,50 +20,56 @@ def promote_user(client, message):
 
     try:
         user_member = client.get_chat_member(chat_id, user_id)
-        print(f"User ID: {user_id}, Status: {user_member.status}")
-
         if user_member.status != "administrator":
             client.send_message(chat_id, "You need to be an administrator to use this command.")
             return
-
         if not user_member.privileges.can_promote_members:
             client.send_message(chat_id, "You do not have permission to promote other users.")
             return
-
     except Exception as e:
         client.send_message(chat_id, "Error retrieving your status.")
         print(f"Error retrieving user member status: {e}")
         return
 
-    target_user_id = None
+    target_user_id = get_target_user_id(client, message, chat_id)
+    if target_user_id is None:
+        client.send_message(chat_id, "Please specify a user to promote by username, user ID, or replying to their message.")
+        return
+
+    if not is_user_promotable(client, chat_id, target_user_id):
+        client.send_message(chat_id, "This user is already promoted by someone else.")
+        return
+
+    display_permission_buttons(client, chat_id, user_member, target_user_id)
+
+def get_target_user_id(client, message, chat_id):
+    """Retrieve the target user ID from the message."""
     if message.reply_to_message:
-        target_user_id = message.reply_to_message.from_user.id
+        return message.reply_to_message.from_user.id
     else:
         try:
-            target_user_id = int(message.command[1])
+            return int(message.command[1])
         except (IndexError, ValueError):
             target_username = message.command[1].replace('@', '') if len(message.command) > 1 else None
             if target_username:
                 try:
                     target_user = client.get_chat_member(chat_id, target_username)
-                    target_user_id = target_user.user.id
+                    return target_user.user.id
                 except Exception:
-                    client.send_message(chat_id, "User not found.")
-                    return
-            else:
-                client.send_message(chat_id, "Please specify a user to promote by username, user ID, or replying to their message.")
-                return
+                    return None
+            return None
 
+def is_user_promotable(client, chat_id, target_user_id):
+    """Check if the target user can be promoted."""
     try:
         target_user_member = client.get_chat_member(chat_id, target_user_id)
-        if target_user_member.status in ['administrator', 'creator']:
-            client.send_message(chat_id, "This user is already promoted by someone else.")
-            return
+        return target_user_member.status not in ['administrator', 'creator']
     except Exception as e:
-        client.send_message(chat_id, "Error retrieving target user's status.")
         print(f"Error retrieving target user member status: {e}")
-        return
+        return False
 
+def display_permission_buttons(client, chat_id, user_member, target_user_id):
+    """Display permission buttons for granting privileges."""
     markup = InlineKeyboardMarkup(row_width=2)
     permissions = {
         "Can Change Info": "can_change_info",
@@ -89,20 +93,20 @@ def handle_permission_toggle(client, callback_query: CallbackQuery):
     action = data[1]
     perm_code = data[2]
     target_user_id = int(data[3])
-
     user_id = callback_query.from_user.id
+
     try:
         user_member = client.get_chat_member(callback_query.message.chat.id, user_id)
-
         if user_member.status != "administrator":
             client.answer_callback_query(callback_query.id, "You need admin rights to perform this action.")
             return
 
         if action == "toggle":
+            # Here you should add the logic to actually grant or revoke the permission
             client.answer_callback_query(callback_query.id, f"Toggled {perm_code} for user {target_user_id}.")
+            # Implement logic to apply the permission change
         elif action == "locked":
             client.answer_callback_query(callback_query.id, "You don't have permission to grant this.")
-
     except Exception as e:
         client.answer_callback_query(callback_query.id, "Error retrieving your status.")
         print(f"Error retrieving user member status in callback: {e}")
