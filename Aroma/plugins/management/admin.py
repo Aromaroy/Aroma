@@ -36,13 +36,13 @@ def promote_user(client, message):
 
     # Check user's admin status
     user_member = client.get_chat_member(chat_id, user_id)
-    user_can_promote = getattr(user_member.privileges, 'can_promote_members', False) if user_member.status == "administrator" else False
+    user_can_promote = getattr(user_member.privileges, 'can_promote_members', False)
 
     print(f"Bot's can_promote_members: {bot_can_promote}")
     print(f"User's admin status: {user_member.status}")
     print(f"User can promote: {user_can_promote}, Privileges: {user_member.privileges}")
 
-    if not user_can_promote:
+    if user_member.status != "administrator" or not user_can_promote:
         client.send_message(chat_id, "You need admin rights with permission to add admins to use this command.")
         return
 
@@ -89,7 +89,7 @@ def handle_permission_toggle(client, callback_query: CallbackQuery):
         return
 
     if action == "toggle":
-        # Here, you would implement the actual permission toggling logic
+        # Implement actual permission toggling logic here.
         client.answer_callback_query(callback_query.id, f"Toggled {perm_code} for user {target_user_id}")
     elif action == "locked":
         client.answer_callback_query(callback_query.id, "You don't have permission to grant this.")
