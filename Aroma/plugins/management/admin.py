@@ -1,6 +1,9 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+import logging
 from Aroma import app
+
+logging.basicConfig(level=logging.INFO)
 
 @app.on_message(filters.command('promote') & filters.group)
 def promote_user(client, message):
@@ -10,16 +13,20 @@ def promote_user(client, message):
 
     try:
         bot_member = client.get_chat_member(chat_id, bot_user.id)
+        logging.info(f"Bot member status: {bot_member.status}, privileges: {bot_member.privileges}")
+
         if not bot_member.privileges.can_promote_members:
             client.send_message(chat_id, "I don't have permission to promote members.")
             return
     except Exception as e:
         client.send_message(chat_id, "Error retrieving bot status.")
-        print(f"Error retrieving bot member status: {e}")
+        logging.error(f"Error retrieving bot member status: {e}")
         return
 
     try:
         user_member = client.get_chat_member(chat_id, user_id)
+        logging.info(f"User {user_id} status: {user_member.status}, privileges: {user_member.privileges}")
+
         if user_member.status != "administrator":
             client.send_message(chat_id, "You need to be an administrator to use this command.")
             return
@@ -28,7 +35,7 @@ def promote_user(client, message):
             return
     except Exception as e:
         client.send_message(chat_id, "Error retrieving your status.")
-        print(f"Error retrieving user member status: {e}")
+        logging.error(f"Error retrieving user member status: {e}")
         return
 
     target_user_id = get_target_user_id(client, message, chat_id)
@@ -43,7 +50,6 @@ def promote_user(client, message):
     display_permission_buttons(client, chat_id, user_member, target_user_id)
 
 def get_target_user_id(client, message, chat_id):
-    """Retrieve the target user ID from the message."""
     if message.reply_to_message:
         return message.reply_to_message.from_user.id
     else:
@@ -55,21 +61,20 @@ def get_target_user_id(client, message, chat_id):
                 try:
                     target_user = client.get_chat_member(chat_id, target_username)
                     return target_user.user.id
-                except Exception:
+                except Exception as e:
+                    logging.error(f"Error retrieving target user by username: {e}")
                     return None
             return None
 
 def is_user_promotable(client, chat_id, target_user_id):
-    """Check if the target user can be promoted."""
     try:
         target_user_member = client.get_chat_member(chat_id, target_user_id)
         return target_user_member.status not in ['administrator', 'creator']
     except Exception as e:
-        print(f"Error retrieving target user member status: {e}")
+        logging.error(f"Error retrieving target user member status: {e}")
         return False
 
 def display_permission_buttons(client, chat_id, user_member, target_user_id):
-    """Display permission buttons for granting privileges."""
     markup = InlineKeyboardMarkup(row_width=2)
     permissions = {
         "Can Change Info": "can_change_info",
@@ -97,16 +102,16 @@ def handle_permission_toggle(client, callback_query: CallbackQuery):
 
     try:
         user_member = client.get_chat_member(callback_query.message.chat.id, user_id)
+        logging.info(f"User {user_id} status: {user_member.status}, privileges: {user_member.privileges}")
+
         if user_member.status != "administrator":
             client.answer_callback_query(callback_query.id, "You need admin rights to perform this action.")
             return
 
         if action == "toggle":
-            # Here you should add the logic to actually grant or revoke the permission
             client.answer_callback_query(callback_query.id, f"Toggled {perm_code} for user {target_user_id}.")
-            # Implement logic to apply the permission change
         elif action == "locked":
             client.answer_callback_query(callback_query.id, "You don't have permission to grant this.")
     except Exception as e:
         client.answer_callback_query(callback_query.id, "Error retrieving your status.")
-        print(f"Error retrieving user member status in callback: {e}")
+        logging.error(f"Error retrieving user member status in callback: {e}")
