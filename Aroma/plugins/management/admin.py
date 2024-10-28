@@ -47,7 +47,7 @@ def promote_user(client, message):
         return
 
     if not is_user_promotable(client, chat_id, target_user_id):
-        client.send_message(chat_id, "This user is already promoted by someone else.")
+        client.send_message(chat_id, "This user is already an administrator or cannot be promoted.")
         return
 
     display_permission_buttons(client, chat_id, user_member, target_user_id)
@@ -102,31 +102,28 @@ def handle_permission_toggle(client, callback_query: CallbackQuery):
     perm_code = data[2]
     target_user_id = int(data[3])
     user_id = callback_query.from_user.id
+    chat_id = callback_query.message.chat.id
 
     try:
-        user_member = client.get_chat_member(callback_query.message.chat.id, user_id)
+        user_member = client.get_chat_member(chat_id, user_id)
         logging.info(f"User {user_id} status: {user_member.status}, privileges: {user_member.privileges}")
 
         if user_member.status != "administrator":
             client.answer_callback_query(callback_query.id, "You need admin rights to perform this action.")
             return
 
-        # Toggle the permission based on the current state
-        if perm_code in user_member.privileges:
-            new_privileges = user_member.privileges
-            current_value = getattr(new_privileges, perm_code)
-
-            # Create the permission toggle
-            if current_value:
-                new_privileges = new_privileges._replace(**{perm_code: False})
-                client.promote_chat_member(chat_id, target_user_id, privileges=new_privileges)
-                client.answer_callback_query(callback_query.id, f"{perm_code.replace('_', ' ').capitalize()} revoked.")
-            else:
-                new_privileges = new_privileges._replace(**{perm_code: True})
-                client.promote_chat_member(chat_id, target_user_id, privileges=new_privileges)
-                client.answer_callback_query(callback_query.id, f"{perm_code.replace('_', ' ').capitalize()} granted.")
-        else:
+        if not hasattr(user_member.privileges, perm_code):
             client.answer_callback_query(callback_query.id, "Invalid permission.")
+            return
+
+        current_value = getattr(user_member.privileges, perm_code)
+
+        # Create the permission toggle
+        new_privileges = user_member.privileges._replace(**{perm_code: not current_value})
+        client.promote_chat_member(chat_id, target_user_id, privileges=new_privileges)
+        
+        action = "granted" if not current_value else "revoked"
+        client.answer_callback_query(callback_query.id, f"{perm_code.replace('_', ' ').capitalize()} {action}.")
 
     except Exception as e:
         logging.error(f"Error processing permission toggle: {e}")
