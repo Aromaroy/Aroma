@@ -31,6 +31,15 @@ def promote_user(client, message):
         return
 
     user_member = client.get_chat_member(chat_id, user_id)
+    
+    # Debugging logs to print privileges and user_member info
+    print("Full user_member object:", user_member)
+    print("Privileges type:", type(user_member.privileges))
+    print("Privileges:", user_member.privileges)
+    
+    # Check each privilege individually to identify any access issues
+    print("can_promote_members:", getattr(user_member.privileges, 'can_promote_members', 'Not Found'))
+    print("can_delete_messages:", getattr(user_member.privileges, 'can_delete_messages', 'Not Found'))
 
     # Simplified privilege check
     if user_member.status not in ['administrator', 'creator'] or not user_member.privileges.can_promote_members:
