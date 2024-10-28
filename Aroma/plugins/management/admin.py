@@ -12,26 +12,31 @@ def promote_user(client, message):
     bot_user = client.get_me()
 
     try:
+        # Check bot's member status
         bot_member = client.get_chat_member(chat_id, bot_user.id)
         logging.info(f"Bot member status: {bot_member.status}, privileges: {bot_member.privileges}")
 
+        # Check if the bot has permission to promote members
         if not bot_member.privileges.can_promote_members:
             client.send_message(chat_id, "I don't have permission to promote members.")
             return
 
+        # Check user's member status
         user_member = client.get_chat_member(chat_id, user_id)
         logging.info(f"User {user_id} status: {user_member.status}, privileges: {user_member.privileges}")
 
+        # Ensure the user is an administrator
         if user_member.status != "administrator":
             client.send_message(chat_id, "You need to be an administrator to use this command.")
             return
 
+        # Ensure the user has permission to promote others
         if not user_member.privileges.can_promote_members:
             client.send_message(chat_id, "You do not have permission to promote other users.")
             return
 
     except Exception as e:
-        logging.error(f"Error retrieving member status: {e}")
+        logging.error(f"Error checking permissions: {e}")
         client.send_message(chat_id, "An error occurred while checking permissions.")
         return
 
