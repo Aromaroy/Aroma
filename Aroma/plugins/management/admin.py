@@ -13,8 +13,7 @@ def promote_user(client, message):
     # Check bot's permissions
     try:
         bot_member = client.get_chat_member(chat_id, bot_user.id)
-        bot_can_promote = getattr(bot_member.privileges, 'can_promote_members', False)
-        if not bot_can_promote:
+        if not bot_member.privileges.can_promote_members:
             client.send_message(chat_id, "I don't have permission to promote members.")
             return
     except Exception as e:
@@ -31,10 +30,7 @@ def promote_user(client, message):
             client.send_message(chat_id, "You need to be an administrator to use this command.")
             return
         
-        user_can_promote = getattr(user_member.privileges, 'can_promote_members', False)
-        print(f"User can promote: {user_can_promote}")
-
-        if not user_can_promote:
+        if not user_member.privileges.can_promote_members:
             client.send_message(chat_id, "You do not have permission to promote other users.")
             return
 
@@ -44,6 +40,7 @@ def promote_user(client, message):
         return
 
     # Determine target user ID
+    target_user_id = None
     if message.reply_to_message:
         target_user_id = message.reply_to_message.from_user.id
     else:
@@ -85,13 +82,8 @@ def promote_user(client, message):
     }
 
     for perm_name, perm_code in permissions.items():
-        if getattr(user_member.privileges, perm_code, False):
-            button_text = f"{perm_name} ✅"
-            callback_data = f"promote_toggle_{perm_code}_{target_user_id}"
-        else:
-            button_text = f"🔒 {perm_name}"
-            callback_data = f"promote_locked_{perm_code}"
-
+        button_text = f"{perm_name} ✅" if getattr(user_member.privileges, perm_code, False) else f"🔒 {perm_name}"
+        callback_data = f"promote_toggle_{perm_code}_{target_user_id}" if getattr(user_member.privileges, perm_code, False) else f"promote_locked_{perm_code}"
         markup.add(InlineKeyboardButton(button_text, callback_data=callback_data))
 
     client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
@@ -113,10 +105,11 @@ def handle_permission_toggle(client, callback_query: CallbackQuery):
 
         # Implement actual permission toggling logic here.
         if action == "toggle":
-            client.answer_callback_query(callback_query.id, f"Toggled {perm_code} for user {target_user_id}")
+            # Example: Here you would implement the logic to actually toggle the permission.
+            client.answer_callback_query(callback_query.id, f"Toggled {perm_code} for user {target_user_id}.")
         elif action == "locked":
             client.answer_callback_query(callback_query.id, "You don't have permission to grant this.")
-    
+
     except Exception as e:
         client.answer_callback_query(callback_query.id, "Error retrieving your status.")
         print(f"Error retrieving user member status in callback: {e}")
