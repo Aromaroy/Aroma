@@ -35,7 +35,15 @@ def promote_user(client, message):
         return
 
     # Check user's admin status and permissions
-    user_member = client.get_chat_member(chat_id, user_id)
+    try:
+        user_member = client.get_chat_member(chat_id, user_id)
+    except Exception as e:
+        client.send_message(chat_id, "Error retrieving your status.")
+        print(f"Error retrieving user member status: {e}")
+        return
+
+    print(f"User ID: {user_id}, Status: {user_member.status}")
+
     user_can_promote = getattr(user_member.privileges, 'can_promote_members', False)
 
     print(f"Bot can promote: {bot_can_promote}")
@@ -51,7 +59,13 @@ def promote_user(client, message):
         return
 
     # Check target user's status
-    target_user_member = client.get_chat_member(chat_id, target_user_id)
+    try:
+        target_user_member = client.get_chat_member(chat_id, target_user_id)
+    except Exception as e:
+        client.send_message(chat_id, "Error retrieving target user's status.")
+        print(f"Error retrieving target user member status: {e}")
+        return
+
     if target_user_member.status in ['administrator', 'creator']:
         client.send_message(chat_id, "This user is already promoted by someone else.")
         return
@@ -87,7 +101,12 @@ def handle_permission_toggle(client, callback_query: CallbackQuery):
     target_user_id = int(data[3])
 
     user_id = callback_query.from_user.id
-    user_member = client.get_chat_member(callback_query.message.chat.id, user_id)
+    try:
+        user_member = client.get_chat_member(callback_query.message.chat.id, user_id)
+    except Exception as e:
+        client.answer_callback_query(callback_query.id, "Error retrieving your status.")
+        print(f"Error retrieving user member status: {e}")
+        return
 
     if user_member.status != "administrator":
         client.answer_callback_query(callback_query.id, "You need admin rights to perform this action.")
