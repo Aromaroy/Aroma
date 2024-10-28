@@ -2,7 +2,6 @@ from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from Aroma import app
 
-
 @app.on_message(filters.command('promote'))
 def promote_user(client, message):
     chat_id = message.chat.id
@@ -32,6 +31,8 @@ def promote_user(client, message):
         return
 
     user_member = client.get_chat_member(chat_id, user_id)
+    print("User Privileges:", user_member.privileges)
+
     if user_member.status not in ['administrator', 'creator'] or not getattr(user_member.privileges, 'can_promote_members', False):
         client.send_message(chat_id, "You need admin rights with permission to add admins to use this command.")
         return
@@ -62,7 +63,6 @@ def promote_user(client, message):
         markup.add(InlineKeyboardButton(button_text, callback_data=callback_data))
 
     client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
-
 
 @app.on_callback_query(filters.regex(r"promote_"))
 def handle_permission_toggle(client, callback_query: CallbackQuery):
