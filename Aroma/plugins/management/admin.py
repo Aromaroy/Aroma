@@ -18,13 +18,14 @@ PERMISSION_LIST = [
 
 @app.on_message(filters.command("promote") & filters.group)
 async def promote_user(client, message):
-    admin_permissions = message.chat.permissions
+    bot_member = await client.get_chat_member(message.chat.id, client.me.id)
+    bot_permissions = bot_member.permissions
 
-    # Log available permissions for debugging
-    logging.info(f"Admin permissions: {admin_permissions}")
+    # Log bot permissions for debugging
+    logging.info(f"Bot permissions: {bot_permissions}")
 
     # Check if the bot has permission to promote members
-    if not (hasattr(admin_permissions, 'can_promote_members') and admin_permissions.can_promote_members):
+    if not (hasattr(bot_permissions, 'can_promote_members') and bot_permissions.can_promote_members):
         await message.reply("I need to be an admin to promote members.")
         return
 
