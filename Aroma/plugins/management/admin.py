@@ -25,26 +25,27 @@ def promote_user(client, message):
                 client.send_message(chat_id, "Please specify a user to promote by username, user ID, or replying to their message.")
                 return
 
-    # Check if the bot has permission to promote members
     bot_member = client.get_chat_member(chat_id, bot_user.id)
     bot_can_promote = getattr(bot_member.privileges, 'can_promote_members', False)
     if not bot_can_promote:
         client.send_message(chat_id, "I don't have permission to promote members.")
         return
 
-    # Check if the user issuing the command has permission to promote members
     user_member = client.get_chat_member(chat_id, user_id)
-    user_can_promote = getattr(user_member.privileges, 'can_promote_members', False) if user_member.status == "administrator" else False
-
-    # Debugging logs for admin privileges
+    
     print(f"Bot's can_promote_members: {bot_can_promote}")
-    print(f"User's admin status: {user_member.status}, can_promote_members: {user_can_promote}")
+    print(f"User's admin status: {user_member.status}")
+
+    privileges = user_member.privileges.__dict__
+    for perm, value in privileges.items():
+        print(f"{perm}: {value}")
+
+    user_can_promote = getattr(user_member.privileges, 'can_promote_members', False) if user_member.status == "administrator" else False
 
     if not user_can_promote:
         client.send_message(chat_id, "You need admin rights with permission to add admins to use this command.")
         return
 
-    # Check if the target user is already an admin
     target_user_member = client.get_chat_member(chat_id, target_user_id)
     if target_user_member.status in ['administrator', 'creator']:
         client.send_message(chat_id, "This user is already promoted by someone else.")
