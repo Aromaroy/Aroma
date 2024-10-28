@@ -35,7 +35,6 @@ def promote_user(message):
         bot.reply_to(message, "You need admin rights with permission to add admins to use this command.")
         return
 
-    # Check if the target user is already an admin
     target_user_member = bot.get_chat_member(chat_id, target_user_id)
     if target_user_member.is_chat_admin():
         bot.reply_to(message, "This user is already promoted by someone else.")
