@@ -2,11 +2,46 @@ from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from Aroma import app
 
-@app.on_message(filters.command('promote'))
+@app.on_message(filters.command('promote') & filters.group)
 def promote_user(client, message):
     chat_id = message.chat.id
     user_id = message.from_user.id
     bot_user = client.get_me()
+
+    print("Received promote command.")
+
+    # Check bot's permissions
+    try:
+        bot_member = client.get_chat_member(chat_id, bot_user.id)
+        bot_can_promote = getattr(bot_member.privileges, 'can_promote_members', False)
+        if not bot_can_promote:
+            client.send_message(chat_id, "I don't have permission to promote members.")
+            return
+    except Exception as e:
+        client.send_message(chat_id, "Error retrieving bot status.")
+        print(f"Error retrieving bot member status: {e}")
+        return
+
+    # Check user's admin status and permissions
+    try:
+        user_member = client.get_chat_member(chat_id, user_id)
+        print(f"User ID: {user_id}, Status: {user_member.status}")
+
+        if user_member.status != "administrator":
+            client.send_message(chat_id, "You need to be an administrator to use this command.")
+            return
+        
+        user_can_promote = getattr(user_member.privileges, 'can_promote_members', False)
+        print(f"User can promote: {user_can_promote}")
+
+        if not user_can_promote:
+            client.send_message(chat_id, "You do not have permission to promote other users.")
+            return
+
+    except Exception as e:
+        client.send_message(chat_id, "Error retrieving your status.")
+        print(f"Error retrieving user member status: {e}")
+        return
 
     # Determine target user ID
     if message.reply_to_message:
@@ -27,47 +62,15 @@ def promote_user(client, message):
                 client.send_message(chat_id, "Please specify a user to promote by username, user ID, or replying to their message.")
                 return
 
-    # Check bot's permissions
-    bot_member = client.get_chat_member(chat_id, bot_user.id)
-    bot_can_promote = getattr(bot_member.privileges, 'can_promote_members', False)
-    if not bot_can_promote:
-        client.send_message(chat_id, "I don't have permission to promote members.")
-        return
-
-    # Check user's admin status and permissions
-    try:
-        user_member = client.get_chat_member(chat_id, user_id)
-    except Exception as e:
-        client.send_message(chat_id, "Error retrieving your status.")
-        print(f"Error retrieving user member status: {e}")
-        return
-
-    print(f"User ID: {user_id}, Status: {user_member.status}")
-
-    user_can_promote = getattr(user_member.privileges, 'can_promote_members', False)
-
-    print(f"Bot can promote: {bot_can_promote}")
-    print(f"User status: {user_member.status}")
-    print(f"User can promote: {user_can_promote}, Privileges: {user_member.privileges.__dict__}")
-
-    # Validate if user is admin and has promotion rights
-    if user_member.status != "administrator":
-        client.send_message(chat_id, "You need to be an administrator to use this command.")
-        return
-    if not user_can_promote:
-        client.send_message(chat_id, "You do not have permission to promote other users.")
-        return
-
     # Check target user's status
     try:
         target_user_member = client.get_chat_member(chat_id, target_user_id)
+        if target_user_member.status in ['administrator', 'creator']:
+            client.send_message(chat_id, "This user is already promoted by someone else.")
+            return
     except Exception as e:
         client.send_message(chat_id, "Error retrieving target user's status.")
         print(f"Error retrieving target user member status: {e}")
-        return
-
-    if target_user_member.status in ['administrator', 'creator']:
-        client.send_message(chat_id, "This user is already promoted by someone else.")
         return
 
     # Create InlineKeyboard for permissions
@@ -103,17 +106,17 @@ def handle_permission_toggle(client, callback_query: CallbackQuery):
     user_id = callback_query.from_user.id
     try:
         user_member = client.get_chat_member(callback_query.message.chat.id, user_id)
+
+        if user_member.status != "administrator":
+            client.answer_callback_query(callback_query.id, "You need admin rights to perform this action.")
+            return
+
+        # Implement actual permission toggling logic here.
+        if action == "toggle":
+            client.answer_callback_query(callback_query.id, f"Toggled {perm_code} for user {target_user_id}")
+        elif action == "locked":
+            client.answer_callback_query(callback_query.id, "You don't have permission to grant this.")
+    
     except Exception as e:
         client.answer_callback_query(callback_query.id, "Error retrieving your status.")
-        print(f"Error retrieving user member status: {e}")
-        return
-
-    if user_member.status != "administrator":
-        client.answer_callback_query(callback_query.id, "You need admin rights to perform this action.")
-        return
-
-    if action == "toggle":
-        # Implement actual permission toggling logic here.
-        client.answer_callback_query(callback_query.id, f"Toggled {perm_code} for user {target_user_id}")
-    elif action == "locked":
-        client.answer_callback_query(callback_query.id, "You don't have permission to grant this.")
+        print(f"Error retrieving user member status in callback: {e}")
