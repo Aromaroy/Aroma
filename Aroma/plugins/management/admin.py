@@ -2,6 +2,7 @@ import logging
 from Aroma import app 
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+
 logging.basicConfig(level=logging.INFO)
 
 PERMISSION_LIST = [
@@ -18,7 +19,12 @@ PERMISSION_LIST = [
 @app.on_message(filters.command("promote") & filters.group)
 async def promote_user(client, message):
     admin_permissions = message.chat.permissions
-    if not admin_permissions.can_promote_members:
+
+    # Log available permissions for debugging
+    logging.info(f"Admin permissions: {admin_permissions}")
+
+    # Check if the bot has permission to promote members
+    if not (hasattr(admin_permissions, 'can_promote_members') and admin_permissions.can_promote_members):
         await message.reply("I need to be an admin to promote members.")
         return
 
@@ -58,11 +64,13 @@ async def is_user_promotable(client, chat_id, user_id):
 async def display_permission_buttons(client, chat_id, admin_id, target_user_id):
     admin_permissions = await client.get_chat_member(chat_id, admin_id)
     keyboard = []
+
     for perm, perm_name in PERMISSION_LIST:
-        if getattr(admin_permissions.permissions, perm):
+        if hasattr(admin_permissions.permissions, perm) and getattr(admin_permissions.permissions, perm):
             keyboard.append([InlineKeyboardButton(perm_name, callback_data=f"set_perm_{perm}_{target_user_id}")])
         else:
             keyboard.append([InlineKeyboardButton(f"{perm_name} (You lack this permission)", callback_data="no_permission")])
+
     await client.send_message(chat_id, "Choose permissions to grant:", reply_markup=InlineKeyboardMarkup(keyboard))
 
 @app.on_callback_query(filters.regex(r"set_perm_(\w+)_(\d+)"))
@@ -70,6 +78,7 @@ async def handle_permission_toggle(client, callback_query):
     perm = callback_query.data.split("_")[1]
     user_id = int(callback_query.data.split("_")[2])
     chat_id = callback_query.message.chat.id
+
     try:
         if perm in [p[0] for p in PERMISSION_LIST]:
             await client.promote_chat_member(chat_id, user_id, **{perm: True})
