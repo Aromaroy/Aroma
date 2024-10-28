@@ -1,43 +1,44 @@
-from telebot import TeleBot, types
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-from Aroma import app as bot
+from pyrogram import Client, filters
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from Aroma import app
 
-@bot.message_handler(commands=['promote'])
-def promote_user(message):
+
+@app.on_message(filters.command('promote'))
+def promote_user(client, message):
     chat_id = message.chat.id
     user_id = message.from_user.id
-    bot_user = bot.get_me()
+    bot_user = client.get_me()
 
     if message.reply_to_message:
         target_user_id = message.reply_to_message.from_user.id
     else:
         try:
-            target_user_id = int(message.text.split()[1])
+            target_user_id = int(message.command[1])
         except (IndexError, ValueError):
-            target_username = message.text.split()[1].replace('@', '') if len(message.text.split()) > 1 else None
+            target_username = message.command[1].replace('@', '') if len(message.command) > 1 else None
             if target_username:
-                target_user = bot.get_chat_member(chat_id, target_username)
+                target_user = client.get_chat_member(chat_id, target_username)
                 if not target_user:
-                    bot.reply_to(message, "User not found.")
+                    client.send_message(chat_id, "User not found.")
                     return
                 target_user_id = target_user.user.id
             else:
-                bot.reply_to(message, "Please specify a user to promote by username, user ID, or replying to their message.")
+                client.send_message(chat_id, "Please specify a user to promote by username, user ID, or replying to their message.")
                 return
 
-    bot_member = bot.get_chat_member(chat_id, bot_user.id)
+    bot_member = client.get_chat_member(chat_id, bot_user.id)
     if not bot_member.can_promote_members:
-        bot.reply_to(message, "I don't have permission to promote members.")
+        client.send_message(chat_id, "I don't have permission to promote members.")
         return
 
-    user_member = bot.get_chat_member(chat_id, user_id)
-    if not user_member.is_chat_admin() or not user_member.can_promote_members:
-        bot.reply_to(message, "You need admin rights with permission to add admins to use this command.")
+    user_member = client.get_chat_member(chat_id, user_id)
+    if not user_member.status in ['administrator', 'creator'] or not user_member.can_promote_members:
+        client.send_message(chat_id, "You need admin rights with permission to add admins to use this command.")
         return
 
-    target_user_member = bot.get_chat_member(chat_id, target_user_id)
-    if target_user_member.is_chat_admin():
-        bot.reply_to(message, "This user is already promoted by someone else.")
+    target_user_member = client.get_chat_member(chat_id, target_user_id)
+    if target_user_member.status in ['administrator', 'creator']:
+        client.send_message(chat_id, "This user is already promoted by someone else.")
         return
 
     markup = InlineKeyboardMarkup(row_width=2)
@@ -60,16 +61,16 @@ def promote_user(message):
 
         markup.add(InlineKeyboardButton(button_text, callback_data=callback_data))
 
-    bot.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
+    client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("promote"))
-def handle_permission_toggle(call):
-    data = call.data.split("_")
+@app.on_callback_query(filters.regex(r"promote_"))
+def handle_permission_toggle(client, callback_query: CallbackQuery):
+    data = callback_query.data.split("_")
     action = data[1]
     perm_code = data[2]
     target_user_id = data[3]
 
     if action == "toggle":
-        bot.answer_callback_query(call.id, f"Toggled {perm_code} for user {target_user_id}")
+        client.answer_callback_query(callback_query.id, f"Toggled {perm_code} for user {target_user_id}")
     elif action == "locked":
-        bot.answer_callback_query(call.id, "You don't have permission to grant this.")
+        client.answer_callback_query(callback_query.id, "You don't have permission to grant this.")
