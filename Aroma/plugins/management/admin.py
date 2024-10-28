@@ -1,4 +1,3 @@
-
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from Aroma import app
@@ -19,12 +18,7 @@ def promote_user(client, message):
         if not bot_member.privileges.can_promote_members:
             client.send_message(chat_id, "I don't have permission to promote members.")
             return
-    except Exception as e:
-        client.send_message(chat_id, "Error retrieving bot status.")
-        logging.error(f"Error retrieving bot member status: {e}")
-        return
 
-    try:
         user_member = client.get_chat_member(chat_id, user_id)
         logging.info(f"User {user_id} status: {user_member.status}, privileges: {user_member.privileges}")
 
@@ -37,8 +31,8 @@ def promote_user(client, message):
             return
 
     except Exception as e:
-        client.send_message(chat_id, "Error retrieving your status.")
-        logging.error(f"Error retrieving user member status: {e}")
+        logging.error(f"Error retrieving member status: {e}")
+        client.send_message(chat_id, "An error occurred while checking permissions.")
         return
 
     target_user_id = get_target_user_id(client, message, chat_id)
@@ -112,11 +106,8 @@ def handle_permission_toggle(client, callback_query: CallbackQuery):
             client.answer_callback_query(callback_query.id, "You need admin rights to perform this action.")
             return
 
-        if action == "toggle":
-            client.answer_callback_query(callback_query.id, f"Toggled {perm_code} for user {target_user_id}.")
-            # Implement logic to grant or revoke the permission
-        elif action == "locked":
-            client.answer_callback_query(callback_query.id, "You don't have permission to grant this.")
+        # Implement the permission toggling logic here
+
     except Exception as e:
-        client.answer_callback_query(callback_query.id, "Error retrieving your status.")
         logging.error(f"Error retrieving user member status in callback: {e}")
+        client.answer_callback_query(callback_query.id, "Error retrieving your status.")
