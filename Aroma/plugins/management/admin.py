@@ -31,9 +31,9 @@ def promote_user(client, message):
         return
 
     user_member = client.get_chat_member(chat_id, user_id)
-    print("User Privileges:", user_member.privileges)
 
-    if user_member.status not in ['administrator', 'creator'] or not getattr(user_member.privileges, 'can_promote_members', False):
+    # Simplified privilege check
+    if user_member.status not in ['administrator', 'creator'] or not user_member.privileges.can_promote_members:
         client.send_message(chat_id, "You need admin rights with permission to add admins to use this command.")
         return
 
