@@ -1,7 +1,6 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 import logging
-from Aroma import app
 
 logging.basicConfig(level=logging.INFO)
 
@@ -30,9 +29,11 @@ def promote_user(client, message):
         if user_member.status != "administrator":
             client.send_message(chat_id, "You need to be an administrator to use this command.")
             return
+        
         if not user_member.privileges.can_promote_members:
             client.send_message(chat_id, "You do not have permission to promote other users.")
             return
+
     except Exception as e:
         client.send_message(chat_id, "Error retrieving your status.")
         logging.error(f"Error retrieving user member status: {e}")
@@ -110,6 +111,7 @@ def handle_permission_toggle(client, callback_query: CallbackQuery):
 
         if action == "toggle":
             client.answer_callback_query(callback_query.id, f"Toggled {perm_code} for user {target_user_id}.")
+            # Here you should implement the logic to grant or revoke the permission.
         elif action == "locked":
             client.answer_callback_query(callback_query.id, "You don't have permission to grant this.")
     except Exception as e:
