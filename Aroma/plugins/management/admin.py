@@ -96,10 +96,9 @@ def display_permission_buttons(client, chat_id, user_member, target_user_id):
 
     client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
 
-@app.on_callback_query(filters.regex(r"promote_"))
+@app.on_callback_query(filters.regex(r"promote_toggle_"))
 def handle_permission_toggle(client, callback_query: CallbackQuery):
     data = callback_query.data.split("_")
-    action = data[1]
     perm_code = data[2]
     target_user_id = int(data[3])
     user_id = callback_query.from_user.id
@@ -112,8 +111,23 @@ def handle_permission_toggle(client, callback_query: CallbackQuery):
             client.answer_callback_query(callback_query.id, "You need admin rights to perform this action.")
             return
 
-        # Implement the permission toggling logic here
+        # Toggle the permission based on the current state
+        if perm_code in user_member.privileges:
+            new_privileges = user_member.privileges
+            current_value = getattr(new_privileges, perm_code)
+
+            # Create the permission toggle
+            if current_value:
+                new_privileges = new_privileges._replace(**{perm_code: False})
+                client.promote_chat_member(chat_id, target_user_id, privileges=new_privileges)
+                client.answer_callback_query(callback_query.id, f"{perm_code.replace('_', ' ').capitalize()} revoked.")
+            else:
+                new_privileges = new_privileges._replace(**{perm_code: True})
+                client.promote_chat_member(chat_id, target_user_id, privileges=new_privileges)
+                client.answer_callback_query(callback_query.id, f"{perm_code.replace('_', ' ').capitalize()} granted.")
+        else:
+            client.answer_callback_query(callback_query.id, "Invalid permission.")
 
     except Exception as e:
-        logging.error(f"Error retrieving user member status in callback: {e}")
-        client.answer_callback_query(callback_query.id, "Error retrieving your status.")
+        logging.error(f"Error processing permission toggle: {e}")
+        client.answer_callback_query(callback_query.id, "An error occurred while processing your request.")
