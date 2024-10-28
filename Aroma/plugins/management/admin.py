@@ -1,6 +1,6 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
-from Aroma import app
+from aroma import app
 
 
 @app.on_message(filters.command('promote'))
