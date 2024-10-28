@@ -15,10 +15,10 @@ PERMISSION_LIST = [
     ("can_promote_members", "Promote Members"),
 ]
 
-# Command to promote a user
 @app.on_message(filters.command("promote") & filters.group)
 async def promote_user(client, message):
-    if not message.chat.permissions.can_promote_members:
+    admin_permissions = message.chat.permissions
+    if not admin_permissions.can_promote_members:
         await message.reply("I need to be an admin to promote members.")
         return
 
@@ -57,14 +57,12 @@ async def is_user_promotable(client, chat_id, user_id):
 
 async def display_permission_buttons(client, chat_id, admin_id, target_user_id):
     admin_permissions = await client.get_chat_member(chat_id, admin_id)
-    
     keyboard = []
     for perm, perm_name in PERMISSION_LIST:
         if getattr(admin_permissions.permissions, perm):
             keyboard.append([InlineKeyboardButton(perm_name, callback_data=f"set_perm_{perm}_{target_user_id}")])
         else:
             keyboard.append([InlineKeyboardButton(f"{perm_name} (You lack this permission)", callback_data="no_permission")])
-
     await client.send_message(chat_id, "Choose permissions to grant:", reply_markup=InlineKeyboardMarkup(keyboard))
 
 @app.on_callback_query(filters.regex(r"set_perm_(\w+)_(\d+)"))
@@ -72,12 +70,9 @@ async def handle_permission_toggle(client, callback_query):
     perm = callback_query.data.split("_")[1]
     user_id = int(callback_query.data.split("_")[2])
     chat_id = callback_query.message.chat.id
-
-    # Try to grant the permission
     try:
         if perm in [p[0] for p in PERMISSION_LIST]:
             await client.promote_chat_member(chat_id, user_id, **{perm: True})
-            # Show the Save button after granting permission
             save_keyboard = [
                 [InlineKeyboardButton("Save", callback_data=f"save_perm_{perm}_{user_id}")],
             ]
@@ -94,8 +89,6 @@ async def handle_save_permission(callback_query):
     perm = callback_query.data.split("_")[1]
     user_id = int(callback_query.data.split("_")[2])
     chat_id = callback_query.message.chat.id
-
-    # Confirmation alert message
     await callback_query.answer("Permission has been granted and saved successfully!", show_alert=True)
     await client.send_message(chat_id, f"Permission '{perm.replace('_', ' ').title()}' has been saved for the user.")
 
