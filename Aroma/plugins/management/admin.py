@@ -25,25 +25,21 @@ def promote_user(client, message):
                 client.send_message(chat_id, "Please specify a user to promote by username, user ID, or replying to their message.")
                 return
 
-    # Check if the bot has permission to promote members
     bot_member = client.get_chat_member(chat_id, bot_user.id)
     if not getattr(bot_member.privileges, 'can_promote_members', False):
         client.send_message(chat_id, "I don't have permission to promote members.")
         return
 
-    # Check if the user issuing the command has permission to promote members
     user_member = client.get_chat_member(chat_id, user_id)
     if user_member.status != "administrator" or not getattr(user_member.privileges, 'can_promote_members', False):
         client.send_message(chat_id, "You need admin rights with permission to add admins to use this command.")
         return
 
-    # Check if the target user is already an admin
     target_user_member = client.get_chat_member(chat_id, target_user_id)
     if target_user_member.status in ['administrator', 'creator']:
         client.send_message(chat_id, "This user is already promoted by someone else.")
         return
 
-    # Define and display inline keyboard for permissions
     markup = InlineKeyboardMarkup(row_width=2)
     permissions = {
         "Can Change Info": "can_change_info",
