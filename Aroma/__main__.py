@@ -5,13 +5,13 @@ from pyrogram import idle
 from pytgcalls.exceptions import NoActiveGroupCall
 
 import config
-from ComboBot import LOGGER, app, userbot
-from ComboBot.core.call import Mukesh
-from ComboBot.misc import sudo
-from ComboBot.plugins import ALL_MODULES
-from ComboBot.utils.database import get_banned_users, get_gbanned
+from Aroma import LOGGER, app, userbot
+from Aroma.core.call import Anony
+from Aroma.misc import sudo
+from Aroma.plugins import ALL_MODULES
+from Aroma.utils.database import get_banned_users, get_gbanned
 from config import BANNED_USERS
-from ComboBot.plugins.bot.clone import restart_bots
+from Aroma.plugins.bot.clone import restart_bots
 
 async def init():
 
@@ -37,25 +37,25 @@ async def init():
     await restart_bots()
     await app.start()
     for all_module in ALL_MODULES:
-        importlib.import_module("ComboBot.plugins" + all_module)
-    LOGGER("ComboBot.plugins").info("Successfully Imported Modules...")
+        importlib.import_module("Aroma.plugins" + all_module)
+    LOGGER("Aroma.plugins").info("Successfully Imported Modules...")
     await userbot.start()
-    await Mukesh.start()
+    await Anony.start()
     try:
-        await Mukesh.stream_call("https://te.legra.ph/file/29f784eb49d230ab62e9e.mp4")
+        await Anony.stream_call("https://te.legra.ph/file/29f784eb49d230ab62e9e.mp4")
     except NoActiveGroupCall:
-        LOGGER("ComboBot").error(
+        LOGGER("Aroma").error(
             "Please turn on the videochat of your log group\channel.\n\nStopping Bot..."
         )
         # exit()
     except:
         pass
-    await Mukesh.decorators()
+    await Anony.decorators()
 
     await idle()
     await app.stop()
     await userbot.stop()
-    LOGGER("ComboBot").info("Stopping Combo Bot...")
+    LOGGER("Aroma").info("Stopping Aroma Bot...")
 
 
 if __name__ == "__main__":
