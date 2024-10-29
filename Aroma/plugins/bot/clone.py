@@ -12,14 +12,17 @@ mongo_collection = mongo_db["aromadb"]
 @bot.on_message(filters.command("clone") & filters.private)
 async def on_clone(client, message):  
     try:
+        user_id = message.from_user.id
         user_name = message.from_user.first_name
-        string_token = message.command[1]
+        string_token =message.command[1]
+        # print(string_token)
 
         bots = list(mongo_collection.find())
         string_tokens = None 
 
         for bot in bots:
             string_tokens = bot['string']
+            # print("31",string_tokens)
 
         if string_tokens == string_token:
             await message.reply_text("➢ ᴛʜɪs Assɪsᴛᴀɴᴛ UsᴇʀBᴏᴛ  ɪs ᴀʟʀᴇᴀᴅʏ ᴄʟᴏɴᴇᴅ  use /startub command if client is off ")
@@ -35,21 +38,20 @@ async def on_clone(client, message):
             await ai.join_chat("phoenixXsupport")
             await ai.join_chat("TeamArona")
             await ai.join_chat("arona_update")
-            await ai.join_chat("Grabber_memes")
+            await ai.join_chat("PacificArc")
             await ai.join_chat("Mystic_Legion")
             await ai.join_chat("PhoenixGban")
             await ai.join_chat("arona_gban")
-            bot_info = await ai.get_me()
-            
+            bot = await ai.get_me()
             details = {
-                'is_bot': False,
-                'user_id': bot_info.id,  # Use the user ID from the bot info
-                'name': bot_info.first_name,
+                'is_bot':False,
+                'user_id': user_id,
+                'name': bot.first_name,
                 'string': string_token,
-                'username': bot_info.username
+                'username': bot.username
             }
             mongo_collection.insert_one(details)
-            await message.reply_text(f"<b>sᴜᴄᴄᴇssғᴜʟʟʏ ᴄʟᴏɴᴇᴅ ʏᴏᴜʀ Assɪsᴛᴀɴᴛ UsᴇʀBᴏᴛ : @{bot_info.username}.\n\nʏᴏᴜ ᴄᴀɴ ᴀʟsᴏ sᴇᴛ ʏᴏᴜʀ sʜᴏʀᴛɴᴇʀ ɪɴ ʏᴏᴜʀ ᴄʟᴏɴᴇᴅ ʙᴏᴛ ғᴏʀ ᴍᴏʀᴇ ɪɴғᴏ sᴛᴀʀᴛ Assɪsᴛᴀɴᴛ UsᴇʀBᴏᴛ using  .start for more type .help</b>")
+            await message.reply_text(f"<b>sᴜᴄᴄᴇssғᴜʟʟʏ ᴄʟᴏɴᴇᴅ ʏᴏᴜʀ Assɪsᴛᴀɴᴛ UsᴇʀBᴏᴛ : @{bot.username}.\n\nʏᴏᴜ ᴄᴀɴ ᴀʟsᴏ sᴇᴛ ʏᴏᴜʀ sʜᴏʀᴛɴᴇʀ ɪɴ ʏᴏᴜʀ ᴄʟᴏɴᴇᴅ ʙᴏᴛ ғᴏʀ ᴍᴏʀᴇ ɪɴғᴏ sᴛᴀʀᴛ Assɪsᴛᴀɴᴛ UsᴇʀBᴏᴛ using  .start for more type .help</b>")
         except BaseException as e:
             logging.exception(f"Error while cloning ub. {e}")
             await message.reply_text(f"⚠️ <b>Assɪsᴛᴀɴᴛ UsᴇʀBᴏᴛ  Error:</b>\n\n<code>{e}</code>\n\n**Kindly forward this message to owner to get assistance.**")
