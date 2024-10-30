@@ -87,19 +87,33 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
         "can_promote_members": "Promote Members",
     }
 
+    # Initialize permissions dictionary
+    permissions_dict = {
+        "can_change_info": False,
+        "can_delete_messages": False,
+        "can_invite_users": False,
+        "can_restrict_members": False,
+        "can_pin_messages": False,
+        "can_promote_members": False,
+    }
+
     if action == "toggle" and target_user_id and perm_code:
+        permissions_dict[perm_code] = True  # Grant permission
+
         try:
-            # Apply the permission directly
             await client.promote_chat_member(
                 chat_id,
                 target_user_id,
-                **{perm_code: True}  # Grant permission directly
+                permissions=permissions_dict  # Pass the permissions dictionary
             )
 
             # Update the buttons
             buttons = []
             for code, name in permissions.items():
-                buttons.append(InlineKeyboardButton(f"{name} ✅", callback_data=f"promote|toggle|{code}|{target_user_id}"))
+                buttons.append(InlineKeyboardButton(
+                    f"{name} ✅" if permissions_dict[code] else f"{name} ❌",
+                    callback_data=f"promote|toggle|{code}|{target_user_id}"
+                ))
 
             buttons.append(InlineKeyboardButton("Save", callback_data=f"promote|save|{target_user_id}"))
             buttons.append(InlineKeyboardButton("Close", callback_data="promote|close"))
@@ -114,7 +128,6 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
             print(f"Error granting permission: {e}")
 
     elif action == "save" and target_user_id:
-        # Send confirmation message
         await client.send_message(chat_id, f"User {target_user_id} has been promoted.")
         await callback_query.answer("Promotion confirmed.", show_alert=True)
 
