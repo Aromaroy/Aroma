@@ -1,5 +1,5 @@
 from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, ChatPermissions
 from Aroma import app
 
 @app.on_message(filters.command('promote') & filters.group)
@@ -91,18 +91,17 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
     if action == "toggle" and target_user_id and perm_code:
         permissions_dict[perm_code] = not permissions_dict[perm_code]  # Toggle permission
 
+        permissions = ChatPermissions(
+            can_change_info=permissions_dict["can_change_info"],
+            can_delete_messages=permissions_dict["can_delete_messages"],
+            can_invite_users=permissions_dict["can_invite_users"],
+            can_restrict_members=permissions_dict["can_restrict_members"],
+            can_pin_messages=permissions_dict["can_pin_messages"],
+            can_promote_members=permissions_dict["can_promote_members"],
+        )
+
         try:
-            # Unpack the permissions correctly
-            await client.promote_chat_member(
-                chat_id,
-                target_user_id,
-                can_change_info=permissions_dict["can_change_info"],
-                can_delete_messages=permissions_dict["can_delete_messages"],
-                can_invite_users=permissions_dict["can_invite_users"],
-                can_restrict_members=permissions_dict["can_restrict_members"],
-                can_pin_messages=permissions_dict["can_pin_messages"],
-                can_promote_members=permissions_dict["can_promote_members"],
-            )
+            await client.promote_chat_member(chat_id, target_user_id, permissions=permissions)
 
             # Update the buttons
             buttons = []
@@ -118,7 +117,7 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
             markup = InlineKeyboardMarkup([[button] for button in buttons])
             await callback_query.message.edit_reply_markup(markup)
 
-            await callback_query.answer(f"{permissions[perm_code]} has been {'granted' if permissions_dict[perm_code] else 'revoked'}.", show_alert=True)
+            await callback_query.answer(f"{permissions_dict[perm_code]} has been {'granted' if permissions_dict[perm_code] else 'revoked'}.", show_alert=True)
 
         except Exception as e:
             await callback_query.answer("Failed to grant permission. Please try again.", show_alert=True)
