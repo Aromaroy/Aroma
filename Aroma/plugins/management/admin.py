@@ -91,6 +91,7 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
     if action == "toggle" and target_user_id and perm_code:
         permissions_dict[perm_code] = not permissions_dict[perm_code]  # Toggle permission
 
+        # Initialize permissions correctly
         permissions = ChatPermissions(
             can_change_info=permissions_dict["can_change_info"],
             can_delete_messages=permissions_dict["can_delete_messages"],
@@ -105,9 +106,9 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
 
             # Update the buttons
             buttons = []
-            for code, name in permissions_dict.items():
+            for code, value in permissions_dict.items():
                 buttons.append(InlineKeyboardButton(
-                    f"{name} ✅" if permissions_dict[code] else f"{name} ❌",
+                    f"{code.replace('can_', '').replace('_', ' ').capitalize()} {'✅' if value else '❌'}",
                     callback_data=f"promote|toggle|{code}|{target_user_id}"
                 ))
 
