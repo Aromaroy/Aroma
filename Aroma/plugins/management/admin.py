@@ -78,15 +78,6 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
     target_user_id = int(data[3]) if len(data) > 3 and data[3].isdigit() else None
     chat_id = callback_query.message.chat.id
 
-    permissions = {
-        "can_change_info": "Change Info",
-        "can_delete_messages": "Delete Messages",
-        "can_invite_users": "Invite Users",
-        "can_restrict_members": "Restrict Members",
-        "can_pin_messages": "Pin Messages",
-        "can_promote_members": "Promote Members",
-    }
-
     # Initialize permissions dictionary
     permissions_dict = {
         "can_change_info": False,
@@ -101,15 +92,14 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
         permissions_dict[perm_code] = True  # Grant permission
 
         try:
-            await client.promote_chat_member(
-                chat_id,
-                target_user_id,
-                permissions=permissions_dict  # Pass the permissions dictionary
-            )
+            # Prepare the arguments for the promote_chat_member method
+            kwargs = {code: permissions_dict[code] for code in permissions_dict}
+
+            await client.promote_chat_member(chat_id, target_user_id, **kwargs)  # Unpack the permissions dictionary
 
             # Update the buttons
             buttons = []
-            for code, name in permissions.items():
+            for code, name in permissions_dict.items():
                 buttons.append(InlineKeyboardButton(
                     f"{name} ✅" if permissions_dict[code] else f"{name} ❌",
                     callback_data=f"promote|toggle|{code}|{target_user_id}"
@@ -121,7 +111,7 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
             markup = InlineKeyboardMarkup([[button] for button in buttons])
             await callback_query.message.edit_reply_markup(markup)
 
-            await callback_query.answer(f"{permissions[perm_code]} has been granted.", show_alert=True)
+            await callback_query.answer(f"{permissions_dict[perm_code]} has been granted.", show_alert=True)
 
         except Exception as e:
             await callback_query.answer("Failed to grant permission. Please try again.", show_alert=True)
