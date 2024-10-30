@@ -87,36 +87,41 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
     target_user_id = int(data[3]) if len(data) > 3 and data[3].isdigit() else None
     chat_id = callback_query.message.chat.id
 
+    # Ensure permissions dictionary is correctly referenced
+    permissions = {
+        "can_change_info": "Can Change Info",
+        "can_delete_messages": "Can Delete Messages",
+        "can_invite_users": "Can Invite Users",
+        "can_restrict_members": "Can Restrict Members",
+        "can_pin_messages": "Can Pin Messages",
+        "can_promote_members": "Can Promote Members",
+    }
+
     if action == "toggle" and target_user_id and perm_code:
         try:
             # Toggle the permission state in temp permissions
-            temp_permissions[target_user_id][perm_code] = not temp_permissions[target_user_id][perm_code]
-            new_status = "✅" if temp_permissions[target_user_id][perm_code] else "❌"
+            if perm_code in temp_permissions[target_user_id]:
+                temp_permissions[target_user_id][perm_code] = not temp_permissions[target_user_id][perm_code]
+                new_status = "✅" if temp_permissions[target_user_id][perm_code] else "❌"
 
-            # Update button text with new status
-            permissions = {
-                "can_change_info": "Can Change Info",
-                "can_delete_messages": "Can Delete Messages",
-                "can_invite_users": "Can Invite Users",
-                "can_restrict_members": "Can Restrict Members",
-                "can_pin_messages": "Can Pin Messages",
-                "can_promote_members": "Can Promote Members",
-            }
-            buttons = []
-            for perm_name, code in permissions.items():
-                status_emoji = "✅" if temp_permissions[target_user_id][code] else "❌"
-                buttons.append(InlineKeyboardButton(f"{perm_name} {status_emoji}", callback_data=f"promote|toggle|{code}|{target_user_id}"))
+                # Update button text with new status
+                buttons = []
+                for code, name in permissions.items():
+                    status_emoji = "✅" if temp_permissions[target_user_id][code] else "❌"
+                    buttons.append(InlineKeyboardButton(f"{name} {status_emoji}", callback_data=f"promote|toggle|{code}|{target_user_id}"))
 
-            # Add Save and Close buttons
-            buttons.append(InlineKeyboardButton("Save", callback_data=f"promote|save|{target_user_id}"))
-            buttons.append(InlineKeyboardButton("Close", callback_data="promote|close"))
+                # Add Save and Close buttons
+                buttons.append(InlineKeyboardButton("Save", callback_data=f"promote|save|{target_user_id}"))
+                buttons.append(InlineKeyboardButton("Close", callback_data="promote|close"))
 
-            # Organize buttons in rows and update the message
-            markup = InlineKeyboardMarkup([buttons[i:i + 2] for i in range(0, len(buttons), 2)])
-            await callback_query.message.edit_reply_markup(markup)
+                # Organize buttons in rows and update the message
+                markup = InlineKeyboardMarkup([buttons[i:i + 2] for i in range(0, len(buttons), 2)])
+                await callback_query.message.edit_reply_markup(markup)
 
-            # Show alert confirming the permission toggle
-            await callback_query.answer(f"{permissions[perm_code]} has been {'granted' if temp_permissions[target_user_id][perm_code] else 'removed'}.", show_alert=True)
+                # Show alert confirming the permission toggle
+                await callback_query.answer(f"{permissions[perm_code]} has been {'granted' if temp_permissions[target_user_id][perm_code] else 'removed'}.", show_alert=True)
+            else:
+                await callback_query.answer("Invalid permission code.", show_alert=True)
 
         except Exception as e:
             await callback_query.answer("Failed to toggle permission. Please try again.", show_alert=True)
