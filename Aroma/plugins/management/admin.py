@@ -48,7 +48,8 @@ def promote_user(client, message):
         print(f"Error retrieving target user member status: {e}")
         return
 
-    markup = InlineKeyboardMarkup(row_width=2)
+    # Prepare buttons for each permission
+    buttons = []
     permissions = {
         "Can Change Info": "can_change_info",
         "Can Delete Messages": "can_delete_messages",
@@ -61,7 +62,10 @@ def promote_user(client, message):
     for perm_name, perm_code in permissions.items():
         button_text = f"{perm_name} ✅" if getattr(bot_member.privileges, perm_code, False) else f"🔒 {perm_name}"
         callback_data = f"promote_toggle_{perm_code}_{target_user_id}" if getattr(bot_member.privileges, perm_code, False) else f"promote_locked_{perm_code}"
-        markup.add(InlineKeyboardButton(button_text, callback_data=callback_data))
+        buttons.append(InlineKeyboardButton(button_text, callback_data=callback_data))
+
+    # Organize buttons in rows
+    markup = InlineKeyboardMarkup([buttons[i:i + 2] for i in range(0, len(buttons), 2)])
 
     client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
 
