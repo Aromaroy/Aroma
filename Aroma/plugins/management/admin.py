@@ -89,13 +89,20 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
     }
 
     if action == "toggle" and target_user_id and perm_code:
-        permissions_dict[perm_code] = True  # Grant permission
+        permissions_dict[perm_code] = not permissions_dict[perm_code]  # Toggle permission
 
         try:
-            # Prepare the arguments for the promote_chat_member method
-            kwargs = {code: permissions_dict[code] for code in permissions_dict}
-
-            await client.promote_chat_member(chat_id, target_user_id, **kwargs)  # Unpack the permissions dictionary
+            # Unpack the permissions correctly
+            await client.promote_chat_member(
+                chat_id,
+                target_user_id,
+                can_change_info=permissions_dict["can_change_info"],
+                can_delete_messages=permissions_dict["can_delete_messages"],
+                can_invite_users=permissions_dict["can_invite_users"],
+                can_restrict_members=permissions_dict["can_restrict_members"],
+                can_pin_messages=permissions_dict["can_pin_messages"],
+                can_promote_members=permissions_dict["can_promote_members"],
+            )
 
             # Update the buttons
             buttons = []
@@ -111,7 +118,7 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
             markup = InlineKeyboardMarkup([[button] for button in buttons])
             await callback_query.message.edit_reply_markup(markup)
 
-            await callback_query.answer(f"{permissions_dict[perm_code]} has been granted.", show_alert=True)
+            await callback_query.answer(f"{permissions[perm_code]} has been {'granted' if permissions_dict[perm_code] else 'revoked'}.", show_alert=True)
 
         except Exception as e:
             await callback_query.answer("Failed to grant permission. Please try again.", show_alert=True)
