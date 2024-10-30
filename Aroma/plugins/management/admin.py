@@ -80,7 +80,7 @@ def promote_user(client, message):
     client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
 
 @app.on_callback_query(filters.regex(r"promote\|"))
-def handle_permission_toggle(client, callback_query: CallbackQuery):
+async def handle_permission_toggle(client, callback_query: CallbackQuery):
     data = callback_query.data.split("|")
     action = data[1]
     perm_code = data[2] if len(data) > 2 else None
@@ -113,20 +113,20 @@ def handle_permission_toggle(client, callback_query: CallbackQuery):
 
             # Organize buttons in rows and update the message
             markup = InlineKeyboardMarkup([buttons[i:i + 2] for i in range(0, len(buttons), 2)])
-            callback_query.message.edit_reply_markup(markup)
+            await callback_query.message.edit_reply_markup(markup)
 
             # Show alert confirming the permission toggle
-            client.answer_callback_query(callback_query.id, f"{permissions[perm_code]} has been {'granted' if temp_permissions[target_user_id][perm_code] else 'removed'}.")
+            await callback_query.answer(f"{permissions[perm_code]} has been {'granted' if temp_permissions[target_user_id][perm_code] else 'removed'}.", show_alert=True)
 
         except Exception as e:
-            client.answer_callback_query(callback_query.id, "Failed to toggle permission. Please try again.")
+            await callback_query.answer("Failed to toggle permission. Please try again.", show_alert=True)
             print(f"Error toggling permission: {e}")
 
     elif action == "save" and target_user_id:
         try:
             # Apply permissions from temp_permissions
             permissions_to_set = temp_permissions[target_user_id]
-            client.promote_chat_member(
+            await client.promote_chat_member(
                 chat_id,
                 target_user_id,
                 can_change_info=permissions_to_set["can_change_info"],
@@ -136,13 +136,13 @@ def handle_permission_toggle(client, callback_query: CallbackQuery):
                 can_pin_messages=permissions_to_set["can_pin_messages"],
                 can_promote_members=permissions_to_set["can_promote_members"],
             )
-            client.send_message(chat_id, "Permissions have been applied successfully.")
+            await client.send_message(chat_id, "Permissions have been applied successfully.")
             del temp_permissions[target_user_id]
-            client.answer_callback_query(callback_query.id, "Permissions saved successfully.")
+            await callback_query.answer("Permissions saved successfully.", show_alert=True)
         except Exception as e:
-            client.send_message(chat_id, "Failed to apply permissions. Please try again.")
+            await client.send_message(chat_id, "Failed to apply permissions. Please try again.")
             print(f"Error applying permissions: {e}")
 
     elif action == "close":
-        callback_query.message.delete()
-        client.answer_callback_query(callback_query.id, "Permissions selection closed without saving.")
+        await callback_query.message.delete()
+        await callback_query.answer("Permissions selection closed without saving.", show_alert=True)
