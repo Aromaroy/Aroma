@@ -89,12 +89,12 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
 
     # Ensure permissions dictionary is correctly referenced
     permissions = {
-        "can_change_info": "Can Change Info",
-        "can_delete_messages": "Can Delete Messages",
-        "can_invite_users": "Can Invite Users",
-        "can_restrict_members": "Can Restrict Members",
-        "can_pin_messages": "Can Pin Messages",
-        "can_promote_members": "Can Promote Members",
+        "can_change_info": "Change Info",
+        "can_delete_messages": "Delete Messages",
+        "can_invite_users": "Invite Users",
+        "can_restrict_members": "Restrict Members",
+        "can_pin_messages": "Pin Messages",
+        "can_promote_members": "Promote Members",
     }
 
     if action == "toggle" and target_user_id and perm_code:
