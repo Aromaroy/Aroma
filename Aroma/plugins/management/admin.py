@@ -1,21 +1,21 @@
 from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, ChatPermissions
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, ChatPrivileges
 from Aroma import app
 
 @app.on_message(filters.command('promote') & filters.group)
-def promote_user(client, message):
+async def promote_user(client, message):
     chat_id = message.chat.id
-    bot_user = client.get_me()
+    bot_user = await client.get_me()
 
     print("Received promote command.")
 
     try:
-        bot_member = client.get_chat_member(chat_id, bot_user.id)
+        bot_member = await client.get_chat_member(chat_id, bot_user.id)
         if not bot_member.privileges.can_promote_members:
-            client.send_message(chat_id, "I don't have permission to promote members.")
+            await client.send_message(chat_id, "I don't have permission to promote members.")
             return
     except Exception as e:
-        client.send_message(chat_id, "Error retrieving bot status.")
+        await client.send_message(chat_id, "Error retrieving bot status.")
         print(f"Error retrieving bot member status: {e}")
         return
 
@@ -29,22 +29,22 @@ def promote_user(client, message):
             target_username = message.command[1].replace('@', '') if len(message.command) > 1 else None
             if target_username:
                 try:
-                    target_user = client.get_chat_member(chat_id, target_username)
+                    target_user = await client.get_chat_member(chat_id, target_username)
                     target_user_id = target_user.user.id
                 except Exception:
-                    client.send_message(chat_id, "User not found.")
+                    await client.send_message(chat_id, "User not found.")
                     return
             else:
-                client.send_message(chat_id, "Please specify a user to promote by username, user ID, or replying to their message.")
+                await client.send_message(chat_id, "Please specify a user to promote by username, user ID, or replying to their message.")
                 return
 
     try:
-        target_user_member = client.get_chat_member(chat_id, target_user_id)
+        target_user_member = await client.get_chat_member(chat_id, target_user_id)
         if target_user_member.status in ['administrator', 'creator']:
-            client.send_message(chat_id, "This user is already promoted by someone else.")
+            await client.send_message(chat_id, "This user is already promoted by someone else.")
             return
     except Exception as e:
-        client.send_message(chat_id, "Error retrieving target user's status.")
+        await client.send_message(chat_id, "Error retrieving target user's status.")
         print(f"Error retrieving target user member status: {e}")
         return
 
@@ -57,8 +57,8 @@ def promote_user(client, message):
         "Add Web Page Previews": "can_add_web_page_previews",
         "Change Info": "can_change_info",
         "Invite Users": "can_invite_users",
+        "Restrict Members": "can_restrict_members",
         "Pin Messages": "can_pin_messages",
-        "Promote Members": "can_promote_members",
     }
 
     for perm_name, perm_code in permissions.items():
@@ -71,7 +71,7 @@ def promote_user(client, message):
 
     markup = InlineKeyboardMarkup([[button] for button in buttons])
 
-    client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
+    await client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
 
 @app.on_callback_query(filters.regex(r"promote\|"))
 async def handle_permission_toggle(client, callback_query: CallbackQuery):
@@ -90,28 +90,27 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
         "can_add_web_page_previews": False,
         "can_change_info": False,
         "can_invite_users": False,
+        "can_restrict_members": False,
         "can_pin_messages": False,
-        "can_promote_members": False,
     }
 
     if action == "toggle" and target_user_id and perm_code:
         permissions_dict[perm_code] = not permissions_dict[perm_code]  # Toggle permission
 
         # Initialize permissions correctly
-        permissions = ChatPermissions(
-            can_send_messages=permissions_dict["can_send_messages"],
-            can_send_media_messages=permissions_dict["can_send_media_messages"],
-            can_send_polls=permissions_dict["can_send_polls"],
-            can_send_other_messages=permissions_dict["can_send_other_messages"],
-            can_add_web_page_previews=permissions_dict["can_add_web_page_previews"],
+        privileges = ChatPrivileges(
             can_change_info=permissions_dict["can_change_info"],
             can_invite_users=permissions_dict["can_invite_users"],
+            can_delete_messages=False,  # Set according to your needs
+            can_restrict_members=permissions_dict["can_restrict_members"],
             can_pin_messages=permissions_dict["can_pin_messages"],
-            can_promote_members=permissions_dict["can_promote_members"],
+            can_promote_members=False,  # Always set to False in this context
+            can_manage_chat=False,  # Set according to your needs
+            can_manage_video_chats=False,  # Set according to your needs
         )
 
         try:
-            await client.promote_chat_member(chat_id, target_user_id, permissions=permissions)
+            await client.promote_chat_member(chat_id, target_user_id, privileges=privileges)
 
             # Update the buttons
             buttons = []
