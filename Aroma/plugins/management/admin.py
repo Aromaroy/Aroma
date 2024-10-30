@@ -61,7 +61,7 @@ def promote_user(client, message):
 
     for perm_name, perm_code in permissions.items():
         button_text = f"{perm_name} ✅" if getattr(bot_member.privileges, perm_code, False) else f"🔒 {perm_name}"
-        callback_data = f"promote_toggle_{perm_code}_{target_user_id}" if getattr(bot_member.privileges, perm_code, False) else f"promote_locked_{perm_code}"
+        callback_data = f"promote|toggle|{perm_code}|{target_user_id}" if getattr(bot_member.privileges, perm_code, False) else f"promote|locked|{perm_code}"
         buttons.append(InlineKeyboardButton(button_text, callback_data=callback_data))
 
     # Organize buttons in rows
@@ -69,14 +69,14 @@ def promote_user(client, message):
 
     client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
 
-@app.on_callback_query(filters.regex(r"promote_"))
+@app.on_callback_query(filters.regex(r"promote\|"))
 def handle_permission_toggle(client, callback_query: CallbackQuery):
-    data = callback_query.data.split("_")
+    data = callback_query.data.split("|")
     action = data[1]
     perm_code = data[2]
-    target_user_id = int(data[3])
+    target_user_id = int(data[3]) if len(data) > 3 else None
 
-    if action == "toggle":
+    if action == "toggle" and target_user_id:
         client.answer_callback_query(callback_query.id, f"Toggled {perm_code} for user {target_user_id}.")
     elif action == "locked":
         client.answer_callback_query(callback_query.id, "You don't have permission to grant this.")
