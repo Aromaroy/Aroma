@@ -55,7 +55,7 @@ def promote_user(client, message):
     buttons = []
     permissions = {
         "Change Info": "can_change_info",
-        "Delete Messages": "can_delete_messages",
+        "Can Delete Messages": "can_delete_messages",
         "Invite Users": "can_invite_users",
         "Restrict Members": "can_restrict_members",
         "Pin Messages": "can_pin_messages",
@@ -74,8 +74,8 @@ def promote_user(client, message):
     buttons.append(InlineKeyboardButton("Save", callback_data=f"promote|save|{target_user_id}"))
     buttons.append(InlineKeyboardButton("Close", callback_data="promote|close"))
 
-    # Organize buttons in rows
-    markup = InlineKeyboardMarkup([buttons[i:i + 2] for i in range(0, len(buttons), 2)])
+    # Organize buttons in single columns
+    markup = InlineKeyboardMarkup([[button] for button in buttons])
 
     client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
 
@@ -114,8 +114,8 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
                 buttons.append(InlineKeyboardButton("Save", callback_data=f"promote|save|{target_user_id}"))
                 buttons.append(InlineKeyboardButton("Close", callback_data="promote|close"))
 
-                # Organize buttons in rows and update the message
-                markup = InlineKeyboardMarkup([buttons[i:i + 2] for i in range(0, len(buttons), 2)])
+                # Organize buttons in single columns and update the message
+                markup = InlineKeyboardMarkup([[button] for button in buttons])
                 await callback_query.message.edit_reply_markup(markup)
 
                 # Show alert confirming the permission toggle
