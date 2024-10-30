@@ -55,7 +55,7 @@ def promote_user(client, message):
     buttons = []
     permissions = {
         "Change Info": "can_change_info",
-        "Can Delete Messages": "can_delete_messages",
+        "Delete Messages": "can_delete_messages",
         "Invite Users": "can_invite_users",
         "Restrict Members": "can_restrict_members",
         "Pin Messages": "can_pin_messages",
