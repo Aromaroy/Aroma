@@ -9,8 +9,6 @@ async def promote_user(client, message):
     chat_id = message.chat.id
     bot_user = await client.get_me()
 
-    print("Received promote command.")
-
     try:
         bot_member = await client.get_chat_member(chat_id, bot_user.id)
         if not bot_member.privileges.can_promote_members:
@@ -18,7 +16,6 @@ async def promote_user(client, message):
             return
     except Exception as e:
         await client.send_message(chat_id, "Error retrieving bot status.")
-        print(f"Error retrieving bot member status: {e}")
         return
 
     target_user_id = None
@@ -40,18 +37,21 @@ async def promote_user(client, message):
                 await client.send_message(chat_id, "Please specify a user to promote by username, user ID, or replying to their message.")
                 return
 
-    # Initialize permissions if not already present
+    # Initialize permissions with the specified options
     if target_user_id not in temporary_permissions:
         temporary_permissions[target_user_id] = {
-            "can_send_messages": False,
-            "can_send_media_messages": False,
-            "can_send_polls": False,
-            "can_send_other_messages": False,
-            "can_add_web_page_previews": False,
             "can_change_info": False,
+            "can_ban_users": False,
+            "can_delete_messages": False,
             "can_invite_users": False,
-            "can_restrict_members": False,
             "can_pin_messages": False,
+            "can_post_stories": False,
+            "can_edit_stories": False,
+            "can_delete_stories": False,
+            "can_manage_video_chats": False,
+            "can_manage_topics": False,
+            "can_promote_members": False,
+            "can_use_anonymous": False,
         }
 
     # Create buttons based on temporary permissions
@@ -110,7 +110,6 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
             await callback_query.answer("Promotion confirmed.", show_alert=True)
         except Exception as e:
             await callback_query.answer("Failed to promote user. Please try again.", show_alert=True)
-            print(f"Error promoting user: {e}")
 
     elif action == "close":
         await callback_query.message.delete()
