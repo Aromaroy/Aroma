@@ -2,7 +2,6 @@ from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from Aroma import app
 
-# Store permissions temporarily until saved
 temp_permissions = {}
 
 @app.on_message(filters.command('promote') & filters.group)
@@ -51,7 +50,6 @@ def promote_user(client, message):
         print(f"Error retrieving target user member status: {e}")
         return
 
-    # Prepare buttons for each permission
     buttons = []
     permissions = {
         "Change Info": "can_change_info",
@@ -62,7 +60,6 @@ def promote_user(client, message):
         "Promote Members": "can_promote_members",
     }
 
-    # Initialize temp permissions
     temp_permissions[target_user_id] = {perm_code: False for perm_code in permissions.values()}
 
     for perm_name, perm_code in permissions.items():
@@ -70,11 +67,9 @@ def promote_user(client, message):
         callback_data = f"promote|toggle|{perm_code}|{target_user_id}"
         buttons.append(InlineKeyboardButton(button_text, callback_data=callback_data))
 
-    # Add Save and Close buttons
     buttons.append(InlineKeyboardButton("Save", callback_data=f"promote|save|{target_user_id}"))
     buttons.append(InlineKeyboardButton("Close", callback_data="promote|close"))
 
-    # Organize buttons in single columns
     markup = InlineKeyboardMarkup([[button] for button in buttons])
 
     client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
@@ -87,7 +82,6 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
     target_user_id = int(data[3]) if len(data) > 3 and data[3].isdigit() else None
     chat_id = callback_query.message.chat.id
 
-    # Ensure permissions dictionary is correctly referenced
     permissions = {
         "can_change_info": "Change Info",
         "can_delete_messages": "Delete Messages",
@@ -99,26 +93,21 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
 
     if action == "toggle" and target_user_id and perm_code:
         try:
-            # Toggle the permission state in temp permissions
             if perm_code in temp_permissions[target_user_id]:
                 temp_permissions[target_user_id][perm_code] = not temp_permissions[target_user_id][perm_code]
                 new_status = "✅" if temp_permissions[target_user_id][perm_code] else "❌"
 
-                # Update button text with new status
                 buttons = []
                 for code, name in permissions.items():
                     status_emoji = "✅" if temp_permissions[target_user_id][code] else "❌"
                     buttons.append(InlineKeyboardButton(f"{name} {status_emoji}", callback_data=f"promote|toggle|{code}|{target_user_id}"))
 
-                # Add Save and Close buttons
                 buttons.append(InlineKeyboardButton("Save", callback_data=f"promote|save|{target_user_id}"))
                 buttons.append(InlineKeyboardButton("Close", callback_data="promote|close"))
 
-                # Organize buttons in single columns and update the message
                 markup = InlineKeyboardMarkup([[button] for button in buttons])
                 await callback_query.message.edit_reply_markup(markup)
 
-                # Show alert confirming the permission toggle
                 await callback_query.answer(f"{permissions[perm_code]} has been {'granted' if temp_permissions[target_user_id][perm_code] else 'removed'}.", show_alert=True)
             else:
                 await callback_query.answer("Invalid permission code.", show_alert=True)
@@ -129,17 +118,12 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
 
     elif action == "save" and target_user_id:
         try:
-            # Apply permissions from temp_permissions
             permissions_to_set = temp_permissions[target_user_id]
+            print(f"Applying permissions for user {target_user_id}: {permissions_to_set}")
             await client.promote_chat_member(
                 chat_id,
                 target_user_id,
-                can_change_info=permissions_to_set["can_change_info"],
-                can_delete_messages=permissions_to_set["can_delete_messages"],
-                can_invite_users=permissions_to_set["can_invite_users"],
-                can_restrict_members=permissions_to_set["can_restrict_members"],
-                can_pin_messages=permissions_to_set["can_pin_messages"],
-                can_promote_members=permissions_to_set["can_promote_members"],
+                **permissions_to_set
             )
             await client.send_message(chat_id, "Permissions have been applied successfully.")
             del temp_permissions[target_user_id]
