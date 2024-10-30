@@ -57,7 +57,6 @@ def promote_user(client, message):
         "Add Web Page Previews": "can_add_web_page_previews",
         "Change Info": "can_change_info",
         "Invite Users": "can_invite_users",
-        "Restrict Members": "can_restrict_members",
         "Pin Messages": "can_pin_messages",
         "Promote Members": "can_promote_members",
     }
@@ -91,7 +90,6 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
         "can_add_web_page_previews": False,
         "can_change_info": False,
         "can_invite_users": False,
-        "can_restrict_members": False,
         "can_pin_messages": False,
         "can_promote_members": False,
     }
@@ -108,7 +106,6 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
             can_add_web_page_previews=permissions_dict["can_add_web_page_previews"],
             can_change_info=permissions_dict["can_change_info"],
             can_invite_users=permissions_dict["can_invite_users"],
-            can_restrict_members=permissions_dict["can_restrict_members"],
             can_pin_messages=permissions_dict["can_pin_messages"],
             can_promote_members=permissions_dict["can_promote_members"],
         )
