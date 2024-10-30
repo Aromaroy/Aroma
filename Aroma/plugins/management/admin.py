@@ -71,6 +71,7 @@ def promote_user(client, message):
     buttons.append(InlineKeyboardButton("Close", callback_data="promote|close"))
 
     markup = InlineKeyboardMarkup([[button] for button in buttons])
+
     client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
 
 @app.on_callback_query(filters.regex(r"promote\|"))
@@ -94,6 +95,7 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
         try:
             if perm_code in temp_permissions[target_user_id]:
                 temp_permissions[target_user_id][perm_code] = not temp_permissions[target_user_id][perm_code]
+                new_status = "✅" if temp_permissions[target_user_id][perm_code] else "❌"
 
                 buttons = []
                 for code, name in permissions.items():
@@ -107,6 +109,8 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
                 await callback_query.message.edit_reply_markup(markup)
 
                 await callback_query.answer(f"{permissions[perm_code]} has been {'granted' if temp_permissions[target_user_id][perm_code] else 'removed'}.", show_alert=True)
+            else:
+                await callback_query.answer("Invalid permission code.", show_alert=True)
 
         except Exception as e:
             await callback_query.answer("Failed to toggle permission. Please try again.", show_alert=True)
