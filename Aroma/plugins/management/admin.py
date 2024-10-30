@@ -2,8 +2,6 @@ from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from Aroma import app
 
-temp_permissions = {}
-
 @app.on_message(filters.command('promote') & filters.group)
 def promote_user(client, message):
     chat_id = message.chat.id
@@ -60,8 +58,6 @@ def promote_user(client, message):
         "Promote Members": "can_promote_members",
     }
 
-    temp_permissions[target_user_id] = {perm_code: False for perm_code in permissions.values()}
-
     for perm_name, perm_code in permissions.items():
         button_text = f"{perm_name} ❌"
         callback_data = f"promote|toggle|{perm_code}|{target_user_id}"
@@ -93,44 +89,34 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
 
     if action == "toggle" and target_user_id and perm_code:
         try:
-            if perm_code in temp_permissions[target_user_id]:
-                temp_permissions[target_user_id][perm_code] = not temp_permissions[target_user_id][perm_code]
-                new_status = "✅" if temp_permissions[target_user_id][perm_code] else "❌"
-
-                buttons = []
-                for code, name in permissions.items():
-                    status_emoji = "✅" if temp_permissions[target_user_id][code] else "❌"
-                    buttons.append(InlineKeyboardButton(f"{name} {status_emoji}", callback_data=f"promote|toggle|{code}|{target_user_id}"))
-
-                buttons.append(InlineKeyboardButton("Save", callback_data=f"promote|save|{target_user_id}"))
-                buttons.append(InlineKeyboardButton("Close", callback_data="promote|close"))
-
-                markup = InlineKeyboardMarkup([[button] for button in buttons])
-                await callback_query.message.edit_reply_markup(markup)
-
-                await callback_query.answer(f"{permissions[perm_code]} has been {'granted' if temp_permissions[target_user_id][perm_code] else 'removed'}.", show_alert=True)
-            else:
-                await callback_query.answer("Invalid permission code.", show_alert=True)
-
-        except Exception as e:
-            await callback_query.answer("Failed to toggle permission. Please try again.", show_alert=True)
-            print(f"Error toggling permission: {e}")
-
-    elif action == "save" and target_user_id:
-        try:
-            permissions_to_set = temp_permissions[target_user_id]
-            print(f"Applying permissions for user {target_user_id}: {permissions_to_set}")
+            # Apply the permission directly
             await client.promote_chat_member(
                 chat_id,
                 target_user_id,
-                **permissions_to_set
+                **{perm_code: True}  # Grant permission directly
             )
-            await client.send_message(chat_id, "Permissions have been applied successfully.")
-            del temp_permissions[target_user_id]
-            await callback_query.answer("Permissions saved successfully.", show_alert=True)
+
+            # Update the buttons
+            buttons = []
+            for code, name in permissions.items():
+                buttons.append(InlineKeyboardButton(f"{name} ✅", callback_data=f"promote|toggle|{code}|{target_user_id}"))
+
+            buttons.append(InlineKeyboardButton("Save", callback_data=f"promote|save|{target_user_id}"))
+            buttons.append(InlineKeyboardButton("Close", callback_data="promote|close"))
+
+            markup = InlineKeyboardMarkup([[button] for button in buttons])
+            await callback_query.message.edit_reply_markup(markup)
+
+            await callback_query.answer(f"{permissions[perm_code]} has been granted.", show_alert=True)
+
         except Exception as e:
-            await client.send_message(chat_id, "Failed to apply permissions. Please try again.")
-            print(f"Error applying permissions: {e}")
+            await callback_query.answer("Failed to grant permission. Please try again.", show_alert=True)
+            print(f"Error granting permission: {e}")
+
+    elif action == "save" and target_user_id:
+        # Send confirmation message
+        await client.send_message(chat_id, f"User {target_user_id} has been promoted.")
+        await callback_query.answer("Promotion confirmed.", show_alert=True)
 
     elif action == "close":
         await callback_query.message.delete()
