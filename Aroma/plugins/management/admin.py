@@ -14,7 +14,7 @@ async def promote_user(client, message):
         if not bot_member.privileges.can_promote_members:
             await client.send_message(chat_id, "I don't have permission to promote members.")
             return
-    except Exception as e:
+    except Exception:
         await client.send_message(chat_id, "Error retrieving bot status.")
         return
 
@@ -39,19 +39,17 @@ async def promote_user(client, message):
 
     # Initialize permissions with the specified options
     if target_user_id not in temporary_permissions:
+        bot = await client.get_chat_member(chat_id, bot_user.id)  # Get bot privileges
+
         temporary_permissions[target_user_id] = {
             "can_change_info": False,
-            "can_ban_users": False,
-            "can_delete_messages": False,
-            "can_invite_users": False,
-            "can_pin_messages": False,
-            "can_post_stories": False,
-            "can_edit_stories": False,
-            "can_delete_stories": False,
-            "can_manage_video_chats": False,
-            "can_manage_topics": False,
+            "can_invite_users": bot.privileges.can_invite_users,
+            "can_delete_messages": bot.privileges.can_delete_messages,
+            "can_restrict_members": False,  # No banning rights
+            "can_pin_messages": bot.privileges.can_pin_messages,
             "can_promote_members": False,
-            "can_use_anonymous": False,
+            "can_manage_chat": bot.privileges.can_manage_chat,
+            "can_manage_video_chats": bot.privileges.can_manage_video_chats,
         }
 
     # Create buttons based on temporary permissions
@@ -108,7 +106,7 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
             await client.promote_chat_member(chat_id, target_user_id, privileges=privileges)
             await callback_query.send_message(chat_id, f"User {target_user_id} has been promoted with the selected permissions.")
             await callback_query.answer("Promotion confirmed.", show_alert=True)
-        except Exception as e:
+        except Exception:
             await callback_query.answer("Failed to promote user. Please try again.", show_alert=True)
 
     elif action == "close":
