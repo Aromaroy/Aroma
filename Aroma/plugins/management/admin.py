@@ -54,12 +54,12 @@ def promote_user(client, message):
     # Prepare buttons for each permission
     buttons = []
     permissions = {
-        "Can Change Info": "can_change_info",
-        "Can Delete Messages": "can_delete_messages",
-        "Can Invite Users": "can_invite_users",
-        "Can Restrict Members": "can_restrict_members",
-        "Can Pin Messages": "can_pin_messages",
-        "Can Promote Members": "can_promote_members",
+        "Change Info": "can_change_info",
+        "Delete Messages": "can_delete_messages",
+        "Invite Users": "can_invite_users",
+        "Restrict Members": "can_restrict_members",
+        "Pin Messages": "can_pin_messages",
+        "Promote Members": "can_promote_members",
     }
 
     # Initialize temp permissions
