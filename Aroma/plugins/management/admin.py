@@ -74,7 +74,7 @@ def handle_permission_toggle(client, callback_query: CallbackQuery):
     data = callback_query.data.split("|")
     action = data[1]
     perm_code = data[2]
-    target_user_id = int(data[3]) if len(data) > 3 else None
+    target_user_id = int(data[3]) if len(data) > 3 and data[3].isdigit() else None
 
     if action == "toggle" and target_user_id:
         client.answer_callback_query(callback_query.id, f"Toggled {perm_code} for user {target_user_id}.")
