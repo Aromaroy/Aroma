@@ -51,7 +51,6 @@ def promote_user(client, message):
     buttons = []
     permissions = {
         "Change Info": "can_change_info",
-        "Delete Messages": "can_delete_messages",
         "Invite Users": "can_invite_users",
         "Restrict Members": "can_restrict_members",
         "Pin Messages": "can_pin_messages",
@@ -81,7 +80,6 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
     # Initialize permissions dictionary
     permissions_dict = {
         "can_change_info": False,
-        "can_delete_messages": False,
         "can_invite_users": False,
         "can_restrict_members": False,
         "can_pin_messages": False,
@@ -94,7 +92,6 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
         # Initialize permissions correctly
         permissions = ChatPermissions(
             can_change_info=permissions_dict["can_change_info"],
-            can_delete_messages=permissions_dict["can_delete_messages"],
             can_invite_users=permissions_dict["can_invite_users"],
             can_restrict_members=permissions_dict["can_restrict_members"],
             can_pin_messages=permissions_dict["can_pin_messages"],
