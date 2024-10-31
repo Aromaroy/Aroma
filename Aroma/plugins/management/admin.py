@@ -4,6 +4,7 @@ from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, ChatPrivileges
 from Aroma import app
 from config import MONGO_DB_URI
+from Aroma.core.mongo import mongodb
 
 mongo_client = MongoClient(MONGO_DB_URI)
 db = mongo_client['your_database_name']
