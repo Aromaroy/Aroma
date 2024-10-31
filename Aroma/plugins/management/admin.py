@@ -215,7 +215,6 @@ async def demote_user(client, message):
     bot_user = await client.get_me()
 
     try:
-        # Check if the bot has permission to promote members
         bot_member = await client.get_chat_member(chat_id, bot_user.id)
         if not bot_member.privileges.can_promote_members:
             await client.send_message(chat_id, "ɪ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ ᴘᴇʀᴍɪꜱꜱɪᴏɴ ᴛᴏ ᴅᴇᴍᴏᴛᴇ ᴍᴇᴍʙᴇʀꜱ.")
@@ -225,36 +224,29 @@ async def demote_user(client, message):
         logger.error(f"Error retrieving bot status: {e}")
         return
 
-    # Get the current user's member status
     user_member = await client.get_chat_member(chat_id, message.from_user.id)
 
-    # Check if the user has admin privileges
-    if not user_member.privileges:
+    if not user_member.privileges or not user_member.privileges.can_promote_members:
         await client.send_message(chat_id, "ʏᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴀɴ ᴀᴅᴍɪɴ.")
         return
 
-    if not user_member.privileges.can_promote_members:
-        await client.send_message(chat_id, "ʏᴏᴜ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ ᴀᴅᴅ ᴀᴅᴍɪɴ ʀɪɢʜᴛ.")
-        return
-
-    # Get the target user ID to demote
     target_user_id = await get_target_user_id(client, chat_id, message)
     if target_user_id is None:
         return
 
     target_member = await client.get_chat_member(chat_id, target_user_id)
 
-    # Check if the target member is already not an admin
     if not target_member.privileges or not target_member.privileges.can_promote_members:
         await client.send_message(chat_id, "ᴛʜɪꜱ ᴜꜱᴇʀ ɪꜱ ᴀʟʀᴇᴀᴅʏ ɴᴏᴛ ᴀɴ ᴀᴅᴍɪɴ.")
         return
 
-    # Confirm the current user has rights to demote
-    if not user_member.privileges.can_promote_members:
-        await client.send_message(chat_id, "ʏᴏᴜ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ ʀɪɢʜᴛꜱ ᴛᴏ ᴅᴇᴍᴏᴛᴇ ᴜꜱᴇʀꜱ.")
+    # Check if the target user was promoted by someone else
+    if target_member.promoted_by and target_member.promoted_by.id != bot_user.id:
+        promoted_by_name = target_member.promoted_by.first_name or target_member.promoted_by.username
+        await client.send_message(chat_id, f"{target_member.user.first_name or target_member.user.username} was promoted by {promoted_by_name}. You cannot demote them.")
         return
 
-    # Remove admin privileges by setting them to False
+    # Proceed with demotion if promoted by the bot
     new_privileges = ChatPrivileges(
         can_change_info=False,
         can_invite_users=False,
@@ -267,9 +259,8 @@ async def demote_user(client, message):
     )
 
     try:
-        # Promote the user with the new privileges (demotion)
         await client.promote_chat_member(chat_id, target_user_id, privileges=new_privileges)
-        await client.send_message(chat_id, f"{target_member.user.first_name or target_member.user.username} ʜᴀꜱ ʙᴇᴇɴ ᴅᴇᴍᴏᴛᴇᴅ ʙʏ {message.from_user.first_name or message.from_user.username}.")
+        await client.send_message(chat_id, f"{target_member.user.first_name or target_member.user.username} has been demoted by {message.from_user.first_name or message.from_user.username}.")
     except Exception as e:
         await client.send_message(chat_id, f"Failed to demote user: {str(e)}")
         logger.error(f"Error demoting user {target_user_id}: {e}")
