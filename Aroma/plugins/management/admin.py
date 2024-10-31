@@ -4,7 +4,6 @@ from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, ChatPrivileges
 from Aroma import app
 from config import MONGO_DB_URI
-from Aroma.core.mongo import mongodb
 
 mongo_client = MongoClient(MONGO_DB_URI)
 db = mongo_client['your_database_name']
@@ -31,39 +30,21 @@ async def promote_user(client, message):
         logger.error(f"Error retrieving bot status: {e}")
         return
 
-    user_member = await client.get_chat_member(chat_id, message.from_user.id)
-
-    if not user_member.privileges or not user_member.privileges.can_promote_members:
-        await client.send_message(chat_id, "You don't have permission to promote users.")
-        return
-
     target_user_id = await get_target_user_id(client, chat_id, message)
     if target_user_id is None:
         return
 
-    target_user_member = await client.get_chat_member(chat_id, target_user_id)
-
     promotion_data = promotion_collection.find_one({"user_id": target_user_id})
 
-    if target_user_member.privileges:
-        if promotion_data and promotion_data['source'] == 'bot':
-            await client.send_message(chat_id, "User is already an admin. You can change their permissions.")
-            if target_user_id not in temporary_permissions:
-                temporary_permissions[target_user_id] = initialize_permissions(bot_member.privileges)
-
-            markup = create_permission_markup(target_user_id, user_member.privileges)
-            sent_message = await client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
-            temporary_messages[target_user_id] = sent_message
-        else:
-            await client.send_message(chat_id, "User is already an admin but was promoted by someone else.")
-    else:
-        await client.send_message(chat_id, "User is not an admin. They can now be promoted.")
+    if promotion_data and promotion_data['source'] == 'bot':
+        await client.send_message(chat_id, "User is already an admin. You can change their permissions.")
         if target_user_id not in temporary_permissions:
             temporary_permissions[target_user_id] = initialize_permissions(bot_member.privileges)
 
-        markup = create_permission_markup(target_user_id, user_member.privileges)
-        sent_message = await client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
-        temporary_messages[target_user_id] = sent_message
+        markup = create_permission_markup(target_user_id, bot_member.privileges)
+        await client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
+    else:
+        await client.send_message(chat_id, "User is already an admin but was promoted by someone else.")
 
     promotion_collection.update_one(
         {"user_id": target_user_id},
