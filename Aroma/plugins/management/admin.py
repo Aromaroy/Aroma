@@ -13,7 +13,7 @@ temporary_messages = {}
 async def promote_user(client, message):
     chat_id = message.chat.id
     bot_user = await client.get_me()
-
+    
     try:
         bot_member = await client.get_chat_member(chat_id, bot_user.id)
         if not bot_member.privileges.can_promote_members:
@@ -24,6 +24,18 @@ async def promote_user(client, message):
         logger.error(f"Error retrieving bot status: {e}")
         return
 
+    user_member = await client.get_chat_member(chat_id, message.from_user.id)
+    
+    # Check if the user is an admin
+    if not user_member.privileges:
+        await client.send_message(chat_id, "You are not an admin to promote users.")
+        return
+    
+    # Check if the admin has permission to promote
+    if not user_member.privileges.can_promote_members:
+        await client.send_message(chat_id, "You don't have permission to promote users.")
+        return
+
     target_user_id = await get_target_user_id(client, chat_id, message)
     if target_user_id is None:
         return
@@ -31,7 +43,7 @@ async def promote_user(client, message):
     if target_user_id not in temporary_permissions:
         temporary_permissions[target_user_id] = initialize_permissions(bot_member.privileges)
 
-    markup = create_permission_markup(target_user_id)
+    markup = create_permission_markup(target_user_id, user_member.privileges)
     sent_message = await client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
     temporary_messages[target_user_id] = sent_message
 
@@ -67,13 +79,17 @@ def initialize_permissions(bot_privileges):
         "can_manage_video_chats": False,
     }
 
-def create_permission_markup(target_user_id):
+def create_permission_markup(target_user_id, admin_privileges):
     buttons = []
-
+    
     for perm, state in temporary_permissions[target_user_id].items():
+        # Check if the admin has permission to give this permission
+        can_grant = getattr(admin_privileges, perm, False)
+        icon = "🔒" if not can_grant else "✅" if state else "❌"
+        
         callback_data = f"promote|toggle|{perm}|{target_user_id}"
         buttons.append(InlineKeyboardButton(
-            f"{perm.replace('can_', '').replace('_', ' ').capitalize()} {'✅' if state else '❌'}",
+            f"{perm.replace('can_', '').replace('_', ' ').capitalize()} {icon}",
             callback_data=callback_data
         ))
 
@@ -94,6 +110,12 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
     action = data[1]
     target_user_id = int(data[-1])
 
+    # Check if the user is an admin before toggling permissions
+    user_member = await client.get_chat_member(callback_query.message.chat.id, callback_query.from_user.id)
+    if not user_member.privileges or not user_member.privileges.can_promote_members:
+        await callback_query.answer("You are not admin to use this button.", show_alert=True)
+        return
+
     if action == "toggle":
         await toggle_permission(callback_query, target_user_id, data[2])
     elif action == "save":
@@ -106,11 +128,15 @@ async def toggle_permission(callback_query, target_user_id, perm_code):
         permissions_dict = temporary_permissions[target_user_id]
         permissions_dict[perm_code] = not permissions_dict[perm_code]
 
-        markup = create_permission_markup(target_user_id)
+        markup = create_permission_markup(target_user_id, await get_chat_privileges(callback_query))
         await callback_query.message.edit_reply_markup(markup)
         await callback_query.answer(f"{perm_code.replace('can_', '').replace('_', ' ').capitalize()} has been toggled.", show_alert=True)
     else:
         await callback_query.answer("No permissions found for this user.", show_alert=True)
+
+async def get_chat_privileges(callback_query):
+    user_member = await callback_query.client.get_chat_member(callback_query.message.chat.id, callback_query.from_user.id)
+    return user_member.privileges
 
 async def save_permissions(client, callback_query, target_user_id):
     if target_user_id in temporary_permissions:
