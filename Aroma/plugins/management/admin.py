@@ -278,16 +278,11 @@ async def purge_user(client, message):
             return
     except Exception as e:
         await client.send_message(chat_id, f"Error retrieving bot status: {e}")
-        logger.error(f"Error retrieving bot status: {e}")
         return
 
     user_member = await client.get_chat_member(chat_id, message.from_user.id)
 
-    if not user_member.privileges:
-        await client.send_message(chat_id, "You are not an admin.")
-        return
-
-    if not user_member.privileges.can_delete_messages:
+    if not user_member.privileges or not user_member.privileges.can_delete_messages:
         await client.send_message(chat_id, "You don't have permission to delete messages.")
         return
 
@@ -296,7 +291,7 @@ async def purge_user(client, message):
         deleted_count = 0
 
         async for msg in client.get_chat_history(chat_id, limit=100):
-            if msg.id >= message_id:
+            if msg.id < message_id:  # Only delete messages older than the replied message
                 await client.delete_messages(chat_id, msg.id)
                 deleted_count += 1
 
