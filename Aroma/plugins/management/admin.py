@@ -274,7 +274,7 @@ async def purge_user(client, message):
     try:
         bot_member = await client.get_chat_member(chat_id, bot_user.id)
         if not bot_member.privileges.can_delete_messages:
-            await client.send_message(chat_id, "ɪ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ ᴘᴇʀᴍɪꜱꜱɪᴏɴ ᴛᴏ ᴅᴇʟᴇᴛᴇ ᴍᴇꜱꜱᴀɢᴇꜱ.")
+            await client.send_message(chat_id, "I don't have permission to delete messages.")
             return
     except Exception as e:
         await client.send_message(chat_id, f"Error retrieving bot status: {e}")
@@ -284,23 +284,23 @@ async def purge_user(client, message):
     user_member = await client.get_chat_member(chat_id, message.from_user.id)
 
     if not user_member.privileges:
-        await client.send_message(chat_id, "ʏᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴀɴ ᴀᴅᴍɪɴ.")
+        await client.send_message(chat_id, "You are not an admin.")
         return
 
     if not user_member.privileges.can_delete_messages:
-        await client.send_message(chat_id, "ʏᴏᴜ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ ᴘᴇʀᴍɪꜱꜱɪᴏɴ ᴛᴏ ᴅᴇʟᴇᴛᴇ ᴍᴇꜱꜱᴀɢᴇꜱ.")
+        await client.send_message(chat_id, "You don't have permission to delete messages.")
         return
 
     if message.reply_to_message:
-        message_id = message.reply_to_message.message_id
+        message_id = message.reply_to_message.id  # Corrected line
         messages_to_delete = await client.get_chat_history(chat_id, limit=100)
 
         deleted_count = 0
         async for msg in messages_to_delete:
-            if msg.message_id >= message_id:
-                await client.delete_messages(chat_id, msg.message_id)
+            if msg.id >= message_id:  # Corrected line
+                await client.delete_messages(chat_id, msg.id)  # Corrected line
                 deleted_count += 1
 
         await client.send_message(chat_id, f"Deleted {deleted_count} messages.")
     else:
-        await client.send_message(chat_id, "ᴘʟᴇᴀꜱᴇ ʀᴇᴘʟʏ ᴛᴏ ᴛʜᴇ ᴍᴇꜱꜱᴀɢᴇ ʏᴏᴜ ᴡᴀɴᴛ ᴛᴏ ᴘᴜʀɢᴇ.")
+        await client.send_message(chat_id, "Please reply to the message you want to purge.")
