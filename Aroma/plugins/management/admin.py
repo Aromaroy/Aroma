@@ -119,10 +119,15 @@ async def show_permissions(client, callback_query: CallbackQuery):
 
 def create_permission_markup(target_user_id, admin_privileges):
     buttons = []
+    chat_id = None  # Initialize chat_id here
 
     for perm, state in temporary_permissions[target_user_id].items():
         can_grant = getattr(admin_privileges, perm, False)
         icon = "🔒" if not can_grant else "✅" if state else "❌"
+
+        if chat_id is None:
+            # Get chat_id from temporary_messages or other means
+            chat_id = temporary_messages.get(target_user_id, {}).get('chat_id', None)
 
         callback_data = f"promote|toggle|{perm}|{target_user_id}|{chat_id}"  # Include chat_id
         buttons.append(InlineKeyboardButton(
@@ -215,4 +220,5 @@ async def close_permission_selection(callback_query):
     await callback_query.answer("Permissions selection closed without saving.", show_alert=True)
 
 async def cleanup_temporary_permissions():
+    # This function can be implemented to clear expired permissions if needed
     pass
