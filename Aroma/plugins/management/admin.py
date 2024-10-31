@@ -244,7 +244,7 @@ async def demote_user(client, message):
         await client.send_message(chat_id, "ᴛʜɪꜱ ᴜꜱᴇʀ ɪꜱ ᴀʟʀᴇᴀᴅʏ ɴᴏᴛ ᴀɴ ᴀᴅᴍɪɴ.")
         return
 
-    if target_member.promoted_by and target_member.promoted_by.user.id != message.from_user.id:
+    if target_member.promoted_by and target_member.promoted_by.id != message.from_user.id:
         await client.send_message(chat_id, "ᴛʜɪꜱ ᴜꜱᴇʀ ᴡᴀꜱ ᴘʀᴏᴍᴏᴛᴇᴅ ʙʏ sᴏᴍᴇᴏɴᴇ ᴇʟsᴇ. ʏᴏᴜ ᴄᴀɴ'ᴛ ᴅᴇᴍᴏᴛᴇ ᴛʜᴇᴍ.")
         return
 
