@@ -1,6 +1,10 @@
+import logging
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, ChatPrivileges
 from Aroma import app
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 temporary_permissions = {}
 
@@ -16,6 +20,7 @@ async def promote_user(client, message):
             return
     except Exception as e:
         await client.send_message(chat_id, f"Error retrieving bot status: {e}")
+        logger.error(f"Error retrieving bot status: {e}")
         return
 
     target_user_id = None
@@ -32,6 +37,7 @@ async def promote_user(client, message):
                     target_user_id = target_user.user.id
                 except Exception:
                     await client.send_message(chat_id, "User not found.")
+                    logger.warning("User not found.")
                     return
             else:
                 await client.send_message(chat_id, "Please specify a user to promote by username, user ID, or replying to their message.")
@@ -93,10 +99,10 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
     elif action == "save" and target_user_id:
         if target_user_id in temporary_permissions:
             permissions = temporary_permissions.pop(target_user_id)
-            print(f"Saving permissions for user {target_user_id}: {permissions}")
+            logger.info(f"Saving permissions for user {target_user_id}: {permissions}")
 
             privileges = ChatPrivileges(**permissions)
-            print(f"Promoting user {target_user_id} with privileges: {privileges}")
+            logger.info(f"Promoting user {target_user_id} with privileges: {privileges}")
 
             try:
                 await client.promote_chat_member(chat_id, target_user_id, privileges=privileges)
@@ -105,7 +111,7 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
                 await callback_query.answer("Promotion confirmed.", show_alert=True)
             except Exception as e:
                 await callback_query.answer(f"Failed to promote user: {str(e)}", show_alert=True)
-                print(f"Error promoting user {target_user_id} with privileges {privileges}: {e}")
+                logger.error(f"Error promoting user {target_user_id} with privileges {privileges}: {e}")
         else:
             await callback_query.answer("No permissions found for this user.", show_alert=True)
 
