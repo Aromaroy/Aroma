@@ -7,6 +7,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 temporary_permissions = {}
+temporary_messages = {}
 
 @app.on_message(filters.command('promote') & filters.group)
 async def promote_user(client, message):
@@ -31,7 +32,8 @@ async def promote_user(client, message):
         temporary_permissions[target_user_id] = initialize_permissions(bot_member.privileges)
 
     markup = create_permission_markup(target_user_id)
-    await client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
+    sent_message = await client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
+    temporary_messages[target_user_id] = sent_message
 
 async def get_target_user_id(client, chat_id, message):
     if message.reply_to_message:
@@ -70,7 +72,6 @@ def create_permission_markup(target_user_id):
 
     for perm, state in temporary_permissions[target_user_id].items():
         callback_data = f"promote|toggle|{perm}|{target_user_id}"
-        logger.debug(f"Creating button with callback data: {callback_data}")
         buttons.append(InlineKeyboardButton(
             f"{perm.replace('can_', '').replace('_', ' ').capitalize()} {'✅' if state else '❌'}",
             callback_data=callback_data
@@ -91,7 +92,7 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
         return
 
     action = data[1]
-    target_user_id = int(data[-1])  # Get the last element as target_user_id
+    target_user_id = int(data[-1])
 
     if action == "toggle":
         await toggle_permission(callback_query, target_user_id, data[2])
@@ -114,10 +115,7 @@ async def toggle_permission(callback_query, target_user_id, perm_code):
 async def save_permissions(client, callback_query, target_user_id):
     if target_user_id in temporary_permissions:
         permissions = temporary_permissions.pop(target_user_id)
-        logger.info(f"Saving permissions for user {target_user_id}: {permissions}")
-
         privileges = ChatPrivileges(**permissions)
-        logger.info(f"Promoting user {target_user_id} with privileges: {privileges}")
 
         chat_id = callback_query.message.chat.id
         try:
@@ -126,7 +124,12 @@ async def save_permissions(client, callback_query, target_user_id):
             user_name = updated_member.user.first_name or updated_member.user.username or "User"
 
             await callback_query.message.edit_reply_markup(reply_markup=None)
-            await callback_query.answer(f"{user_name} has been promoted.", show_alert=True)  # Show as alert
+            await callback_query.answer(f"{user_name} has been promoted.", show_alert=True)
+
+            if target_user_id in temporary_messages:
+                await temporary_messages[target_user_id].delete()
+                del temporary_messages[target_user_id]
+
         except Exception as e:
             await callback_query.answer(f"Failed to promote user: {str(e)}", show_alert=True)
             logger.error(f"Error promoting user {target_user_id} with privileges {privileges}: {e}")
@@ -135,6 +138,12 @@ async def save_permissions(client, callback_query, target_user_id):
 
 async def close_permission_selection(callback_query):
     await callback_query.message.delete()
+    target_user_id = int(callback_query.data.split("|")[-1])
+
+    if target_user_id in temporary_messages:
+        await temporary_messages[target_user_id].delete()
+        del temporary_messages[target_user_id]
+
     await callback_query.answer("Permissions selection closed without saving.", show_alert=True)
 
 async def cleanup_temporary_permissions():
