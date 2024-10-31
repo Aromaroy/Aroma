@@ -50,8 +50,6 @@ async def promote_user(client, message):
             "can_manage_video_chats": bot_privileges.can_manage_video_chats,
         }
 
-    print(f"Temporary permissions before sending buttons: {temporary_permissions}")
-
     buttons = []
     for perm_name, current_state in temporary_permissions[target_user_id].items():
         button_text = f"{perm_name.replace('can_', '').replace('_', ' ').capitalize()} {'✅' if current_state else '❌'}"
@@ -77,8 +75,6 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
             permissions_dict = temporary_permissions[target_user_id]
             permissions_dict[perm_code] = not permissions_dict[perm_code]
 
-            print(f"Toggled {perm_code}: {permissions_dict}")
-
             buttons = []
             for code, current_state in permissions_dict.items():
                 buttons.append(InlineKeyboardButton(
@@ -95,20 +91,23 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
             await callback_query.answer(f"{perm_code.replace('can_', '').replace('_', ' ').capitalize()} has been toggled.", show_alert=True)
 
     elif action == "save" and target_user_id:
-        permissions = temporary_permissions.pop(target_user_id)
-        print(f"Saving permissions for user {target_user_id}: {permissions}")
+        if target_user_id in temporary_permissions:
+            permissions = temporary_permissions.pop(target_user_id)
+            print(f"Saving permissions for user {target_user_id}: {permissions}")
 
-        privileges = ChatPrivileges(**permissions)
-        print(f"Promoting user {target_user_id} with permissions: {privileges}")
+            privileges = ChatPrivileges(**permissions)
+            print(f"Promoting user {target_user_id} with privileges: {privileges}")
 
-        try:
-            await client.promote_chat_member(chat_id, target_user_id, privileges=privileges)
-            updated_member = await client.get_chat_member(chat_id, target_user_id)
-            await callback_query.message.reply_text(f"User {target_user_id} has been promoted with the selected permissions. Current status: {updated_member.status}.")
-            await callback_query.answer("Promotion confirmed.", show_alert=True)
-        except Exception as e:
-            await callback_query.answer(f"Failed to promote user: {str(e)}", show_alert=True)
-            print(f"Error promoting user {target_user_id} with privileges {privileges}: {e}")
+            try:
+                await client.promote_chat_member(chat_id, target_user_id, privileges=privileges)
+                updated_member = await client.get_chat_member(chat_id, target_user_id)
+                await callback_query.message.reply_text(f"User {target_user_id} has been promoted with the selected permissions. Current status: {updated_member.status}.")
+                await callback_query.answer("Promotion confirmed.", show_alert=True)
+            except Exception as e:
+                await callback_query.answer(f"Failed to promote user: {str(e)}", show_alert=True)
+                print(f"Error promoting user {target_user_id} with privileges {privileges}: {e}")
+        else:
+            await callback_query.answer("No permissions found for this user.", show_alert=True)
 
     elif action == "close":
         await callback_query.message.delete()
