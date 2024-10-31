@@ -37,7 +37,6 @@ async def promote_user(client, message):
                 await client.send_message(chat_id, "Please specify a user to promote by username, user ID, or replying to their message.")
                 return
 
-    # Initialize permissions
     if target_user_id not in temporary_permissions:
         bot_privileges = bot_member.privileges
         temporary_permissions[target_user_id] = {
@@ -51,10 +50,8 @@ async def promote_user(client, message):
             "can_manage_video_chats": bot_privileges.can_manage_video_chats,
         }
 
-    # Debugging: log temporary permissions
     print(f"Temporary permissions before sending buttons: {temporary_permissions}")
 
-    # Create buttons based on temporary permissions
     buttons = []
     for perm_name, current_state in temporary_permissions[target_user_id].items():
         button_text = f"{perm_name.replace('can_', '').replace('_', ' ').capitalize()} {'✅' if current_state else '❌'}"
@@ -65,7 +62,6 @@ async def promote_user(client, message):
     buttons.append(InlineKeyboardButton("Close", callback_data="promote|close"))
 
     markup = InlineKeyboardMarkup([[button] for button in buttons])
-
     await client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
 
 @app.on_callback_query(filters.regex(r"promote\|"))
@@ -77,15 +73,12 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
     chat_id = callback_query.message.chat.id
 
     if action == "toggle" and target_user_id and perm_code:
-        # Toggle the selected permission
         if target_user_id in temporary_permissions:
             permissions_dict = temporary_permissions[target_user_id]
             permissions_dict[perm_code] = not permissions_dict[perm_code]
 
-            # Debugging: log permissions after toggle
             print(f"Toggled {perm_code}: {permissions_dict}")
 
-            # Update the buttons to reflect current permissions
             buttons = []
             for code, current_state in permissions_dict.items():
                 buttons.append(InlineKeyboardButton(
@@ -103,23 +96,19 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
 
     elif action == "save" and target_user_id:
         permissions = temporary_permissions.pop(target_user_id)
-        
-        # Debugging: log permissions being saved
         print(f"Saving permissions for user {target_user_id}: {permissions}")
-        
-        privileges = ChatPrivileges(**permissions)
 
-        # Debugging: log bot privileges before promotion
-        print(f"Bot privileges: {privileges}")
+        privileges = ChatPrivileges(**permissions)
+        print(f"Promoting user {target_user_id} with permissions: {privileges}")
 
         try:
             await client.promote_chat_member(chat_id, target_user_id, privileges=privileges)
-            updated_member = await client.get_chat_member(chat_id, target_user_id)  # Check updated status
+            updated_member = await client.get_chat_member(chat_id, target_user_id)
             await callback_query.send_message(chat_id, f"User {target_user_id} has been promoted with the selected permissions. Current status: {updated_member.status}.")
             await callback_query.answer("Promotion confirmed.", show_alert=True)
         except Exception as e:
             await callback_query.answer(f"Failed to promote user: {str(e)}", show_alert=True)
-            print(f"Error promoting user: {e}")  # Log error
+            print(f"Error promoting user {target_user_id} with privileges {privileges}: {e}")
 
     elif action == "close":
         await callback_query.message.delete()
