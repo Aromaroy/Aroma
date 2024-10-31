@@ -54,7 +54,7 @@ async def promote_user(client, message):
                 await client.send_message(chat_id, "This user is already promoted by another admin/bot.")
                 return
             else:
-                await send_permission_options(client, chat_id, target_user_id, message.from_user.id)
+                await send_permission_options(client, chat_id, target_user_id, message.from_user.id, user_member)
                 return
         else:
             await client.send_message(chat_id, "This user is already an admin, but no promotion record found.")
@@ -74,7 +74,7 @@ async def promote_user(client, message):
         "permissions": temporary_permissions[target_user_id]
     })
 
-async def send_permission_options(client, chat_id, target_user_id, promoter_id):
+async def send_permission_options(client, chat_id, target_user_id, promoter_id, user_member):
     markup = create_permission_markup(target_user_id, user_member.privileges)
     await client.send_message(chat_id, "You can change the following permissions:", reply_markup=markup)
 
