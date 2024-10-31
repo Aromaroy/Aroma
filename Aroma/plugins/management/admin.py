@@ -96,7 +96,7 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
     if action == "toggle":
         await toggle_permission(callback_query, target_user_id, data[2])
     elif action == "save":
-        await save_permissions(client, callback_query, target_user_id)  # Pass client here
+        await save_permissions(client, callback_query, target_user_id)
     elif action == "close":
         await close_permission_selection(callback_query)
 
@@ -111,7 +111,7 @@ async def toggle_permission(callback_query, target_user_id, perm_code):
     else:
         await callback_query.answer("No permissions found for this user.", show_alert=True)
 
-async def save_permissions(client, callback_query, target_user_id):  # Accept client as parameter
+async def save_permissions(client, callback_query, target_user_id):
     if target_user_id in temporary_permissions:
         permissions = temporary_permissions.pop(target_user_id)
         logger.info(f"Saving permissions for user {target_user_id}: {permissions}")
@@ -123,8 +123,10 @@ async def save_permissions(client, callback_query, target_user_id):  # Accept cl
         try:
             await client.promote_chat_member(chat_id, target_user_id, privileges=privileges)
             updated_member = await client.get_chat_member(chat_id, target_user_id)
-            await callback_query.message.reply_text(f"User {target_user_id} has been promoted with the selected permissions. Current status: {updated_member.status}.")
-            await callback_query.answer("Promotion confirmed.", show_alert=True)
+            user_name = updated_member.user.first_name or updated_member.user.username or "User"
+
+            await callback_query.message.edit_reply_markup(reply_markup=None)
+            await callback_query.answer(f"{user_name} has been promoted.", show_alert=True)  # Show as alert
         except Exception as e:
             await callback_query.answer(f"Failed to promote user: {str(e)}", show_alert=True)
             logger.error(f"Error promoting user {target_user_id} with privileges {privileges}: {e}")
