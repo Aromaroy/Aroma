@@ -2,7 +2,7 @@ import logging
 from pymongo import MongoClient
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, ChatPrivileges
-from Aroma import app
+from aroma import app
 from config import MONGO_DB_URI
 
 mongo_client = MongoClient(MONGO_DB_URI)
