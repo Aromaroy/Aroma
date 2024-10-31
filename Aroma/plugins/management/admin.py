@@ -41,9 +41,12 @@ async def promote_user(client, message):
     if target_user_id not in temporary_permissions:
         temporary_permissions[target_user_id] = initialize_permissions(bot_member.privileges)
 
-    markup = create_permission_markup(target_user_id, user_member.privileges)
-    sent_message = await client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
-    temporary_messages[target_user_id] = sent_message
+    markup = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🕹 Permissions", callback_data=f"promote|permissions|{target_user_id}"),
+         InlineKeyboardButton("Close", callback_data=f"promote|close|{target_user_id}")]
+    ])
+
+    await client.send_message(chat_id, "Select an option:", reply_markup=markup)
 
 async def get_target_user_id(client, chat_id, message):
     if message.reply_to_message:
@@ -77,6 +80,23 @@ def initialize_permissions(bot_privileges):
         "can_manage_video_chats": False,
     }
 
+@app.on_callback_query(filters.regex(r"promote\|permissions\|"))
+async def show_permissions(client, callback_query: CallbackQuery):
+    target_user_id = int(callback_query.data.split("|")[-1])
+    chat_id = callback_query.message.chat.id
+
+    target_member = await client.get_chat_member(chat_id, target_user_id)
+    target_user_name = target_member.user.first_name or target_member.user.username or "User"
+    group_name = (await client.get_chat(chat_id)).title
+
+    markup = create_permission_markup(target_user_id, await get_chat_privileges(callback_query))
+    
+    await callback_query.message.edit_text(
+        f"👤 {target_user_name} [{target_user_id}]\n👥 {group_name}",
+        reply_markup=markup
+    )
+    await callback_query.answer()
+
 def create_permission_markup(target_user_id, admin_privileges):
     buttons = []
 
@@ -93,7 +113,9 @@ def create_permission_markup(target_user_id, admin_privileges):
     buttons.append(InlineKeyboardButton("Save", callback_data=f"promote|save|{target_user_id}"))
     buttons.append(InlineKeyboardButton("Close", callback_data=f"promote|close|{target_user_id}"))
 
-    return InlineKeyboardMarkup([[button] for button in buttons])
+    # Arrange Save and Close buttons in the same line
+    buttons = [buttons[-2], buttons[-1]] + buttons[:-2]
+    return InlineKeyboardMarkup([buttons[i:i + 1] for i in range(0, len(buttons))])
 
 @app.on_callback_query(filters.regex(r"promote\|"))
 async def handle_permission_toggle(client, callback_query: CallbackQuery):
