@@ -41,8 +41,9 @@ async def promote_user(client, message):
     if target_user_id not in temporary_permissions:
         temporary_permissions[target_user_id] = initialize_permissions(bot_member.privileges)
 
+    bot_username = bot_user.username
     markup = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🕹 Permissions", callback_data=f"promote|permissions|{target_user_id}"),
+        [InlineKeyboardButton("🕹 Permissions", url=f"https://t.me/{bot_username}?start=permissions_{target_user_id}"),
          InlineKeyboardButton("Close", callback_data=f"promote|close|{target_user_id}")]
     ])
 
@@ -79,6 +80,22 @@ def initialize_permissions(bot_privileges):
         "can_manage_chat": False,
         "can_manage_video_chats": False,
     }
+
+@app.on_message(filters.command('start') & filters.private)
+async def start_command(client, message):
+    if len(message.command) > 1 and message.command[1].startswith("permissions_"):
+        target_user_id = int(message.command[1].split("_")[1])
+        if target_user_id in temporary_permissions:
+            markup = create_permission_markup(target_user_id, await get_chat_privileges(message))
+            await client.send_message(
+                message.chat.id,
+                "Here are the permissions you can grant:",
+                reply_markup=markup
+            )
+        else:
+            await client.send_message(message.chat.id, "No permissions found for this user.")
+    else:
+        await client.send_message(message.chat.id, "Welcome! Use /promote in groups to promote users.")
 
 @app.on_callback_query(filters.regex(r"promote\|permissions\|"))
 async def show_permissions(client, callback_query: CallbackQuery):
