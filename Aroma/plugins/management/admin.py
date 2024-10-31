@@ -77,7 +77,6 @@ def create_permission_markup(target_user_id):
         ))
 
     buttons.append(InlineKeyboardButton("Save", callback_data=f"promote|save|{target_user_id}"))
-    buttons.append(InlineKeyboardButton("Reset", callback_data=f"promote|reset|{target_user_id}"))
     buttons.append(InlineKeyboardButton("Close", callback_data=f"promote|close|{target_user_id}"))
 
     return InlineKeyboardMarkup([[button] for button in buttons])
@@ -98,8 +97,6 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
         await toggle_permission(callback_query, target_user_id, data[2])
     elif action == "save":
         await save_permissions(client, callback_query, target_user_id)  # Pass client here
-    elif action == "reset":
-        await reset_permissions(callback_query, target_user_id)
     elif action == "close":
         await close_permission_selection(callback_query)
 
@@ -133,14 +130,6 @@ async def save_permissions(client, callback_query, target_user_id):  # Accept cl
             logger.error(f"Error promoting user {target_user_id} with privileges {privileges}: {e}")
     else:
         await callback_query.answer("No permissions found for this user.", show_alert=True)
-
-async def reset_permissions(callback_query, target_user_id):
-    if target_user_id in temporary_permissions:
-        temporary_permissions.pop(target_user_id)
-        await callback_query.message.edit_reply_markup(create_permission_markup(target_user_id))
-        await callback_query.answer("Permissions have been reset to defaults.", show_alert=True)
-    else:
-        await callback_query.answer("No permissions found for this user to reset.", show_alert=True)
 
 async def close_permission_selection(callback_query):
     await callback_query.message.delete()
