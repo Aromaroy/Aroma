@@ -292,13 +292,12 @@ async def purge_user(client, message):
         return
 
     if message.reply_to_message:
-        message_id = message.reply_to_message.id  # Corrected line
-        messages_to_delete = await client.get_chat_history(chat_id, limit=100)
-
+        message_id = message.reply_to_message.id
         deleted_count = 0
-        async for msg in messages_to_delete:
-            if msg.id >= message_id:  # Corrected line
-                await client.delete_messages(chat_id, msg.id)  # Corrected line
+
+        async for msg in client.get_chat_history(chat_id, limit=100):
+            if msg.id >= message_id:
+                await client.delete_messages(chat_id, msg.id)
                 deleted_count += 1
 
         await client.send_message(chat_id, f"Deleted {deleted_count} messages.")
