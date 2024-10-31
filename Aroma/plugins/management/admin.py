@@ -75,6 +75,10 @@ async def promote_user(client, message):
     })
 
 async def send_permission_options(client, chat_id, target_user_id, promoter_id, user_member):
+    if target_user_id not in temporary_permissions:
+        await client.send_message(chat_id, "No permissions found for this user. Please promote again.")
+        return
+
     markup = create_permission_markup(target_user_id, user_member.privileges)
     await client.send_message(chat_id, "You can change the following permissions:", reply_markup=markup)
 
