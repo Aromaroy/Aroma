@@ -31,8 +31,9 @@ async def promote_user(client, message):
 
     user_member = await client.get_chat_member(chat_id, message.from_user.id)
 
+    # Check if the user is an admin
     if not user_member.privileges or not user_member.privileges.can_promote_members:
-        await client.send_message(chat_id, "You are not an admin to promote users.")
+        await client.send_message(chat_id, "You don't have permission to promote users.")
         return
 
     target_user_id = await get_target_user_id(client, chat_id, message)
