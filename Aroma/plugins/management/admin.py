@@ -42,7 +42,7 @@ async def promote_user(client, message):
         temporary_permissions[target_user_id] = initialize_permissions(bot_member.privileges)
 
     markup = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🕹 Permissions", callback_data=f"promote|permissions|{target_user_id}"),
+        [InlineKeyboardButton("🕹 Permissions", url=f"https://t.me/{(await client.get_me()).username}?start=permissions_{target_user_id}"),
          InlineKeyboardButton("Close", callback_data=f"promote|close|{target_user_id}")]
     ])
 
@@ -91,26 +91,23 @@ async def show_permissions(client, callback_query: CallbackQuery):
     target_user_id = int(callback_query.data.split("|")[-1])
     bot_username = (await client.get_me()).username
 
-    # Construct the URL to open a DM with the bot
-    dm_url = f"https://t.me/{bot_username}?start=permissions_{target_user_id}"
-    
-    await callback_query.message.reply_text(
-        f"Click the link to manage permissions for the user: [Manage Permissions]({dm_url})",
-        disable_web_page_preview=True
-    )
+    # Create an inline button that opens the DM directly
+    markup = InlineKeyboardMarkup([
+        [InlineKeyboardButton("Manage Permissions", url=f"https://t.me/{bot_username}?start=permissions_{target_user_id}")],
+        [InlineKeyboardButton("Close", callback_data=f"promote|close|{target_user_id}")]
+    ])
+
+    await callback_query.message.edit_reply_markup(markup)
     await callback_query.answer()
 
 @app.on_message(filters.command('start'))
 async def start_handler(client, message):
     if len(message.command) > 1 and message.command[1].startswith("permissions_"):
         target_user_id = int(message.command[1].split("_")[1])
-        
+
         if target_user_id in temporary_permissions:
             markup = create_permission_markup(target_user_id, await get_chat_privileges(message))
-            await message.reply_text(
-                "Manage permissions here:",
-                reply_markup=markup
-            )
+            await message.reply_text("Manage permissions here:", reply_markup=markup)
         else:
             await message.reply_text("No permissions found for this user.")
     else:
