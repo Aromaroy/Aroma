@@ -171,7 +171,9 @@ async def save_permissions(client, callback_query, target_user_id):
             updated_member = await client.get_chat_member(chat_id, target_user_id)
             user_name = updated_member.user.first_name or updated_member.user.username or "User"
 
-            await callback_query.message.edit_reply_markup(reply_markup=None)
+            # Deleting the confirmation message after saving permissions
+            await callback_query.message.delete()
+
             await callback_query.answer(f"{user_name} has been promoted.", show_alert=True)
 
             if target_user_id in temporary_messages:
