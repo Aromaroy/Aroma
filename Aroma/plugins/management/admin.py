@@ -240,7 +240,10 @@ async def demote_user(client, message):
         await client.send_message(chat_id, "ᴛʜɪꜱ ᴜꜱᴇʀ ɪꜱ ᴀʟʀᴇᴀᴅʏ ɴᴏᴛ ᴀɴ ᴀᴅᴍɪɴ.")
         return
 
-    # Check if the target user was promoted by someone else
+    if not user_member.privileges.can_promote_members:
+        await client.send_message(chat_id, "ʏᴏᴜ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ ᴀᴅᴅ ᴀᴅᴍɪɴ ʀɪɢʜᴛ.")
+        return
+
     if target_member.promoted_by and target_member.promoted_by.id != bot_user.id:
         promoted_by_name = target_member.promoted_by.first_name or target_member.promoted_by.username
         await client.send_message(chat_id, f"{target_member.user.first_name or target_member.user.username} was promoted by {promoted_by_name}. You cannot demote them.")
