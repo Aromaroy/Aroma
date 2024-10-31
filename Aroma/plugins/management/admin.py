@@ -92,7 +92,7 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
             markup = InlineKeyboardMarkup([[button] for button in buttons])
             await callback_query.message.edit_reply_markup(markup)
 
-            await callback_query.answer(f"{perm_code.replace('can_', '').replace('_', ' ').capitalize()} has been {'granted' if permissions_dict[perm_code] else 'revoked'}.", show_alert=True)
+            await callback_query.answer(f"{perm_code.replace('can_', '').replace('_', ' ').capitalize()} has been toggled.", show_alert=True)
 
     elif action == "save" and target_user_id:
         permissions = temporary_permissions.pop(target_user_id)
@@ -104,7 +104,7 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
         try:
             await client.promote_chat_member(chat_id, target_user_id, privileges=privileges)
             updated_member = await client.get_chat_member(chat_id, target_user_id)
-            await callback_query.send_message(chat_id, f"User {target_user_id} has been promoted with the selected permissions. Current status: {updated_member.status}.")
+            await callback_query.message.reply_text(f"User {target_user_id} has been promoted with the selected permissions. Current status: {updated_member.status}.")
             await callback_query.answer("Promotion confirmed.", show_alert=True)
         except Exception as e:
             await callback_query.answer(f"Failed to promote user: {str(e)}", show_alert=True)
