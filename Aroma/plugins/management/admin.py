@@ -31,11 +31,7 @@ async def promote_user(client, message):
 
     user_member = await client.get_chat_member(chat_id, message.from_user.id)
 
-    if not user_member.privileges:
-        await client.send_message(chat_id, "You are not an admin to promote users.")
-        return
-
-    if not user_member.privileges.can_promote_members:
+    if not user_member.privileges or not user_member.privileges.can_promote_members:
         await client.send_message(chat_id, "You don't have permission to promote users.")
         return
 
@@ -46,6 +42,7 @@ async def promote_user(client, message):
     target_member = await client.get_chat_member(chat_id, target_user_id)
 
     if target_member.privileges:
+        # User is already an admin
         promotion_record = promotions_collection.find_one({"user_id": target_user_id, "chat_id": chat_id})
 
         if promotion_record:
@@ -54,12 +51,14 @@ async def promote_user(client, message):
                 await client.send_message(chat_id, "This user is already promoted by another admin/bot.")
                 return
             else:
+                # User is already promoted by the same admin
                 await send_permission_options(client, chat_id, target_user_id, message.from_user.id, user_member)
                 return
         else:
-            await client.send_message(chat_id, "This user is already an admin, but no promotion record found.")
+            await client.send_message(chat_id, "This user is already an admin, but no promotion record found. Please re-promote.")
             return
 
+    # Initialize permissions if not already done
     if target_user_id not in temporary_permissions:
         temporary_permissions[target_user_id] = initialize_permissions(bot_member.privileges)
 
