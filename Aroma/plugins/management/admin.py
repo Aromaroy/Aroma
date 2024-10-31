@@ -83,7 +83,7 @@ def initialize_permissions(bot_privileges):
 @app.on_callback_query(filters.regex(r"promote\|permissions\|"))
 async def show_permissions(client, callback_query: CallbackQuery):
     user_member = await client.get_chat_member(callback_query.message.chat.id, callback_query.from_user.id)
-    
+
     if not user_member.privileges or not user_member.privileges.can_promote_members:
         await callback_query.answer("You are not admin to use this button.", show_alert=True)
         return
@@ -110,7 +110,8 @@ def create_permission_markup(target_user_id, admin_privileges):
         can_grant = getattr(admin_privileges, perm, False)
         icon = "🔒" if not can_grant else "✅" if state else "❌"
 
-        callback_data = f"promote|toggle|{perm}|{target_user_id}"
+        # Change the callback to send user to DM with a command
+        callback_data = f"send_to_dm|{perm}|{target_user_id}"
         buttons.append(InlineKeyboardButton(
             f"{perm.replace('can_', '').replace('_', ' ').capitalize()} {icon}",
             callback_data=callback_data
@@ -126,6 +127,20 @@ def create_permission_markup(target_user_id, admin_privileges):
     button_rows.append([save_button, close_button])
 
     return InlineKeyboardMarkup(button_rows)
+
+@app.on_callback_query(filters.regex(r"send_to_dm\|"))
+async def send_to_dm(client, callback_query: CallbackQuery):
+    data = callback_query.data.split("|")
+    perm_code = data[1]
+    target_user_id = int(data[2])
+
+    # Notify the user and send inline buttons in their DM
+    await client.send_message(
+        callback_query.from_user.id,
+        "You have been forwarded to manage permissions.",
+        reply_markup=create_permission_markup(target_user_id, await get_chat_privileges(callback_query))
+    )
+    await callback_query.answer("You've been redirected to manage permissions in DMs.", show_alert=True)
 
 @app.on_callback_query(filters.regex(r"promote\|"))
 async def handle_permission_toggle(client, callback_query: CallbackQuery):
