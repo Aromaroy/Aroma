@@ -13,7 +13,7 @@ temporary_messages = {}
 async def promote_user(client, message):
     chat_id = message.chat.id
     bot_user = await client.get_me()
-    
+
     try:
         bot_member = await client.get_chat_member(chat_id, bot_user.id)
         if not bot_member.privileges.can_promote_members:
@@ -25,13 +25,11 @@ async def promote_user(client, message):
         return
 
     user_member = await client.get_chat_member(chat_id, message.from_user.id)
-    
-    # Check if the user is an admin
+
     if not user_member.privileges:
         await client.send_message(chat_id, "You are not an admin to promote users.")
         return
-    
-    # Check if the admin has permission to promote
+
     if not user_member.privileges.can_promote_members:
         await client.send_message(chat_id, "You don't have permission to promote users.")
         return
@@ -81,12 +79,11 @@ def initialize_permissions(bot_privileges):
 
 def create_permission_markup(target_user_id, admin_privileges):
     buttons = []
-    
+
     for perm, state in temporary_permissions[target_user_id].items():
-        # Check if the admin has permission to give this permission
         can_grant = getattr(admin_privileges, perm, False)
         icon = "🔒" if not can_grant else "✅" if state else "❌"
-        
+
         callback_data = f"promote|toggle|{perm}|{target_user_id}"
         buttons.append(InlineKeyboardButton(
             f"{perm.replace('can_', '').replace('_', ' ').capitalize()} {icon}",
@@ -110,8 +107,7 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
     action = data[1]
     target_user_id = int(data[-1])
 
-    # Check if the user is an admin before toggling permissions
-    user_member = await client.get_chat_member(callback_query.message.chat.id, callback_query.from_user.id)
+    user_member = await callback_query._client.get_chat_member(callback_query.message.chat.id, callback_query.from_user.id)
     if not user_member.privileges or not user_member.privileges.can_promote_members:
         await callback_query.answer("You are not admin to use this button.", show_alert=True)
         return
@@ -119,7 +115,7 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
     if action == "toggle":
         await toggle_permission(callback_query, target_user_id, data[2])
     elif action == "save":
-        await save_permissions(client, callback_query, target_user_id)
+        await save_permissions(callback_query._client, callback_query, target_user_id)
     elif action == "close":
         await close_permission_selection(callback_query)
 
@@ -135,7 +131,7 @@ async def toggle_permission(callback_query, target_user_id, perm_code):
         await callback_query.answer("No permissions found for this user.", show_alert=True)
 
 async def get_chat_privileges(callback_query):
-    user_member = await callback_query.client.get_chat_member(callback_query.message.chat.id, callback_query.from_user.id)
+    user_member = await callback_query._client.get_chat_member(callback_query.message.chat.id, callback_query.from_user.id)
     return user_member.privileges
 
 async def save_permissions(client, callback_query, target_user_id):
