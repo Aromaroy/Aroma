@@ -105,16 +105,23 @@ async def show_permissions(client, callback_query: CallbackQuery):
 
 def create_permission_markup(target_user_id, admin_privileges):
     buttons = []
+    button_names = {
+        "can_change_info": "Change Info",
+        "can_invite_users": "Invite Users",
+        "can_delete_messages": "Delete Messages",
+        "can_restrict_members": "Restrict Members",
+        "can_pin_messages": "Pin Messages",
+        "can_promote_members": "Promote Members",
+        "can_manage_chat": "Manage Chat",
+        "can_manage_video_chats": "Manage Video Chats",
+    }
 
     for perm, state in temporary_permissions[target_user_id].items():
         can_grant = getattr(admin_privileges, perm, False)
         icon = "🔒" if not can_grant else "✅" if state else "❌"
-
+        button_label = button_names.get(perm, perm.replace('can_', '').replace('_', ' ').capitalize())
         callback_data = f"promote|toggle|{perm}|{target_user_id}"
-        buttons.append(InlineKeyboardButton(
-            f"{perm.replace('can_', '').replace('_', ' ').capitalize()} {icon}",
-            callback_data=callback_data
-        ))
+        buttons.append(InlineKeyboardButton(f"{button_label} {icon}", callback_data=callback_data))
 
     save_button = InlineKeyboardButton("Save", callback_data=f"promote|save|{target_user_id}")
     close_button = InlineKeyboardButton("Close", callback_data=f"promote|close|{target_user_id}")
@@ -176,10 +183,7 @@ async def save_permissions(client, callback_query, target_user_id):
             await client.promote_chat_member(chat_id, target_user_id, privileges=privileges)
             updated_member = await client.get_chat_member(chat_id, target_user_id)
             user_name = updated_member.user.first_name or updated_member.user.username or "User"
-
-            # Deleting the confirmation message after saving permissions
             await callback_query.message.delete()
-
             await callback_query.answer(f"{user_name} has been promoted.", show_alert=True)
 
             if target_user_id in temporary_messages:
