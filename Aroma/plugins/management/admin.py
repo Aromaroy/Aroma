@@ -283,23 +283,21 @@ async def purge_user(client, message):
 
     user_member = await client.get_chat_member(chat_id, message.from_user.id)
 
-    # Check if the user is an admin
     if not user_member.privileges:
         await client.send_message(chat_id, "ʏᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴀɴ ᴀᴅᴍɪɴ.")
         return
 
-    # Check if the user has delete messages privilege
     if not user_member.privileges.can_delete_messages:
         await client.send_message(chat_id, "ʏᴏᴜ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ ᴘᴇʀᴍɪꜱꜱɪᴏɴ ᴛᴏ ᴅᴇʟᴇᴛᴇ ᴍᴇꜱꜱᴀɢᴇꜱ.")
         return
 
     if message.reply_to_message:
         message_id = message.reply_to_message.message_id
-        messages_to_delete = await client.get_chat_history(chat_id, limit=100)  # Adjust the limit as needed
-        
+        messages_to_delete = await client.get_chat_history(chat_id, limit=100)
+
         deleted_count = 0
         async for msg in messages_to_delete:
-            if msg.message_id >= message_id:  # Delete messages from the reply message onward
+            if msg.message_id >= message_id:
                 await client.delete_messages(chat_id, msg.message_id)
                 deleted_count += 1
 
