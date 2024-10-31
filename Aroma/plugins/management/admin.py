@@ -208,3 +208,58 @@ async def close_permission_selection(callback_query):
 
 async def cleanup_temporary_permissions():
     pass
+
+@app.on_message(filters.command('demote') & filters.group)
+async def demote_user(client, message):
+    chat_id = message.chat.id
+    bot_user = await client.get_me()
+
+    try:
+        bot_member = await client.get_chat_member(chat_id, bot_user.id)
+        if not bot_member.privileges.can_promote_members:
+            await client.send_message(chat_id, "ɪ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ ᴘᴇʀᴍɪꜱꜱɪᴏɴ ᴛᴏ ᴅᴇᴍᴏᴛᴇ ᴍᴇᴍʙᴇʀꜱ.")
+            return
+    except Exception as e:
+        await client.send_message(chat_id, f"Error retrieving bot status: {e}")
+        logger.error(f"Error retrieving bot status: {e}")
+        return
+
+    user_member = await client.get_chat_member(chat_id, message.from_user.id)
+
+    if not user_member.privileges or not user_member.privileges.can_promote_members:
+        await client.send_message(chat_id, "ʏᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴀɴ ᴀᴅᴍɪɴ.")
+        return
+
+    target_user_id = await get_target_user_id(client, chat_id, message)
+    if target_user_id is None:
+        return
+
+    target_member = await client.get_chat_member(chat_id, target_user_id)
+
+    if not target_member.privileges or not target_member.privileges.can_promote_members:
+        await client.send_message(chat_id, "ᴛʜɪꜱ ᴜꜱᴇʀ ɪꜱ ᴀʟʀᴇᴀᴅʏ ɴᴏᴛ ᴀɴ ᴀᴅᴍɪɴ.")
+        return
+
+    # Check if the current user has the right to demote
+    if not user_member.privileges.can_promote_members:
+        await client.send_message(chat_id, "ʏᴏᴜ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ ʀɪɢʜᴛꜱ ᴛᴏ ᴅᴇᴍᴏᴛᴇ ᴜꜱᴇʀꜱ.")
+        return
+
+    # Remove admin privileges
+    new_privileges = ChatPrivileges(
+        can_change_info=False,
+        can_invite_users=False,
+        can_delete_messages=False,
+        can_restrict_members=False,
+        can_pin_messages=False,
+        can_promote_members=False,
+        can_manage_chat=False,
+        can_manage_video_chats=False,
+    )
+
+    try:
+        await client.promote_chat_member(chat_id, target_user_id, privileges=new_privileges)
+        await client.send_message(chat_id, f"{target_member.user.first_name or target_member.user.username} ʜᴀꜱ ʙᴇᴇɴ ᴅᴇᴍᴏᴛᴇᴅ ʙʏ {message.from_user.first_name or message.from_user.username}.")
+    except Exception as e:
+        await client.send_message(chat_id, f"Failed to demote user: {str(e)}")
+        logger.error(f"Error demoting user {target_user_id}: {e}")
