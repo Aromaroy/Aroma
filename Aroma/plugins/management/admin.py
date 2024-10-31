@@ -296,8 +296,13 @@ async def ban_user(client, message):
         return
 
     try:
-        await client.ban_chat_member(chat_id, target_user_id)
         target_member = await client.get_chat_member(chat_id, target_user_id)
+
+        if target_member.privileges and target_member.privileges.can_restrict_members:
+            await client.send_message(chat_id, "I don't want to swim in hellfire.")
+            return
+
+        await client.ban_chat_member(chat_id, target_user_id)
         target_user_name = target_member.user.first_name or target_member.user.username or "User"
         await client.send_message(chat_id, f"{target_user_name} ɢʀᴏᴜᴘ ᴄɪᴛɪᴢᴇɴꜱʜɪᴘ ʀᴇᴠᴏᴋᴇᴅ.")
     except Exception as e:
