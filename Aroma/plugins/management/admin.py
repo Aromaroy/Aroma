@@ -42,7 +42,7 @@ async def promote_user(client, message):
         temporary_permissions[target_user_id] = initialize_permissions(bot_member.privileges)
 
     markup = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🕹 Permissions", url=f"https://t.me/{(await client.get_me()).username}?start=permissions_{target_user_id}"),
+        [InlineKeyboardButton("🕹 Permissions", callback_data=f"promote|permissions|{target_user_id}"),
          InlineKeyboardButton("Close", callback_data=f"promote|close|{target_user_id}")]
     ])
 
@@ -89,29 +89,43 @@ async def show_permissions(client, callback_query: CallbackQuery):
         return
 
     target_user_id = int(callback_query.data.split("|")[-1])
-    bot_username = (await client.get_me()).username
+    chat_id = callback_query.message.chat.id
 
-    # Create an inline button that opens the DM directly
-    markup = InlineKeyboardMarkup([
-        [InlineKeyboardButton("Manage Permissions", url=f"https://t.me/{bot_username}?start=permissions_{target_user_id}")],
-        [InlineKeyboardButton("Close", callback_data=f"promote|close|{target_user_id}")]
-    ])
+    target_member = await client.get_chat_member(chat_id, target_user_id)
+    target_user_name = target_member.user.first_name or target_member.user.username or "User"
+    group_name = (await client.get_chat(chat_id)).title
 
-    await callback_query.message.edit_reply_markup(markup)
+    markup = create_permission_markup(target_user_id, await get_chat_privileges(callback_query))
+
+    await callback_query.message.edit_text(
+        f"👤 {target_user_name} [{target_user_id}]\n👥 {group_name}",
+        reply_markup=markup
+    )
     await callback_query.answer()
 
-@app.on_message(filters.command('start'))
-async def start_handler(client, message):
-    if len(message.command) > 1 and message.command[1].startswith("permissions_"):
-        target_user_id = int(message.command[1].split("_")[1])
+def create_permission_markup(target_user_id, admin_privileges):
+    buttons = []
 
-        if target_user_id in temporary_permissions:
-            markup = create_permission_markup(target_user_id, await get_chat_privileges(message))
-            await message.reply_text("Manage permissions here:", reply_markup=markup)
-        else:
-            await message.reply_text("No permissions found for this user.")
-    else:
-        await message.reply_text("Welcome! Use /promote to manage users.")
+    for perm, state in temporary_permissions[target_user_id].items():
+        can_grant = getattr(admin_privileges, perm, False)
+        icon = "🔒" if not can_grant else "✅" if state else "❌"
+
+        callback_data = f"promote|toggle|{perm}|{target_user_id}"
+        buttons.append(InlineKeyboardButton(
+            f"{perm.replace('can_', '').replace('_', ' ').capitalize()} {icon}",
+            callback_data=callback_data
+        ))
+
+    save_button = InlineKeyboardButton("Save", callback_data=f"promote|save|{target_user_id}")
+    close_button = InlineKeyboardButton("Close", callback_data=f"promote|close|{target_user_id}")
+
+    buttons.append(save_button)
+    buttons.append(close_button)
+
+    button_rows = [buttons[i:i + 1] for i in range(0, len(buttons) - 2)]
+    button_rows.append([save_button, close_button])
+
+    return InlineKeyboardMarkup(button_rows)
 
 @app.on_callback_query(filters.regex(r"promote\|"))
 async def handle_permission_toggle(client, callback_query: CallbackQuery):
@@ -152,30 +166,6 @@ async def get_chat_privileges(callback_query):
     user_member = await callback_query._client.get_chat_member(callback_query.message.chat.id, callback_query.from_user.id)
     return user_member.privileges
 
-def create_permission_markup(target_user_id, admin_privileges):
-    buttons = []
-
-    for perm, state in temporary_permissions[target_user_id].items():
-        can_grant = getattr(admin_privileges, perm, False)
-        icon = "🔒" if not can_grant else "✅" if state else "❌"
-
-        callback_data = f"promote|toggle|{perm}|{target_user_id}"
-        buttons.append(InlineKeyboardButton(
-            f"{perm.replace('can_', '').replace('_', ' ').capitalize()} {icon}",
-            callback_data=callback_data
-        ))
-
-    save_button = InlineKeyboardButton("Save", callback_data=f"promote|save|{target_user_id}")
-    close_button = InlineKeyboardButton("Close", callback_data=f"promote|close|{target_user_id}")
-
-    buttons.append(save_button)
-    buttons.append(close_button)
-
-    button_rows = [buttons[i:i + 1] for i in range(0, len(buttons) - 2)]
-    button_rows.append([save_button, close_button])
-
-    return InlineKeyboardMarkup(button_rows)
-
 async def save_permissions(client, callback_query, target_user_id):
     if target_user_id in temporary_permissions:
         permissions = temporary_permissions.pop(target_user_id)
@@ -187,7 +177,9 @@ async def save_permissions(client, callback_query, target_user_id):
             updated_member = await client.get_chat_member(chat_id, target_user_id)
             user_name = updated_member.user.first_name or updated_member.user.username or "User"
 
+            # Deleting the confirmation message after saving permissions
             await callback_query.message.delete()
+
             await callback_query.answer(f"{user_name} has been promoted.", show_alert=True)
 
             if target_user_id in temporary_messages:
