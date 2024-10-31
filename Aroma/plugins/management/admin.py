@@ -57,7 +57,13 @@ async def promote_user(client, message):
         else:
             await client.send_message(chat_id, "User is already an admin but was promoted by someone else.")
     else:
-        await client.send_message(chat_id, "User is not an admin and cannot be promoted.")
+        await client.send_message(chat_id, "User is not an admin. They can now be promoted.")
+        if target_user_id not in temporary_permissions:
+            temporary_permissions[target_user_id] = initialize_permissions(bot_member.privileges)
+
+        markup = create_permission_markup(target_user_id, user_member.privileges)
+        sent_message = await client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
+        temporary_messages[target_user_id] = sent_message
 
     promotion_collection.update_one(
         {"user_id": target_user_id},
