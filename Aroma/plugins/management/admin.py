@@ -51,6 +51,9 @@ async def promote_user(client, message):
             "can_manage_video_chats": bot_privileges.can_manage_video_chats,
         }
 
+    # Debugging: log temporary permissions
+    print(f"Temporary permissions before sending buttons: {temporary_permissions}")
+
     # Create buttons based on temporary permissions
     buttons = []
     for perm_name, current_state in temporary_permissions[target_user_id].items():
@@ -79,6 +82,9 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
             permissions_dict = temporary_permissions[target_user_id]
             permissions_dict[perm_code] = not permissions_dict[perm_code]
 
+            # Debugging: log permissions after toggle
+            print(f"Toggled {perm_code}: {permissions_dict}")
+
             # Update the buttons to reflect current permissions
             buttons = []
             for code, current_state in permissions_dict.items():
@@ -97,10 +103,14 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
 
     elif action == "save" and target_user_id:
         permissions = temporary_permissions.pop(target_user_id)
+        
+        # Debugging: log permissions being saved
+        print(f"Saving permissions for user {target_user_id}: {permissions}")
+        
         privileges = ChatPrivileges(**permissions)
 
-        # Debugging output
-        print(f"Promoting user {target_user_id} with permissions: {permissions}")
+        # Debugging: log bot privileges before promotion
+        print(f"Bot privileges: {privileges}")
 
         try:
             await client.promote_chat_member(chat_id, target_user_id, privileges=privileges)
@@ -109,6 +119,7 @@ async def handle_permission_toggle(client, callback_query: CallbackQuery):
             await callback_query.answer("Promotion confirmed.", show_alert=True)
         except Exception as e:
             await callback_query.answer(f"Failed to promote user: {str(e)}", show_alert=True)
+            print(f"Error promoting user: {e}")  # Log error
 
     elif action == "close":
         await callback_query.message.delete()
