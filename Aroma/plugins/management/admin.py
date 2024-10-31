@@ -66,13 +66,15 @@ def initialize_permissions(bot_privileges):
     }
 
 def create_permission_markup(target_user_id):
-    buttons = [
-        InlineKeyboardButton(
+    buttons = []
+    
+    for perm, state in temporary_permissions[target_user_id].items():
+        callback_data = f"promote|toggle|{perm}|{target_user_id}"
+        logger.debug(f"Creating button with callback data: {callback_data}")
+        buttons.append(InlineKeyboardButton(
             f"{perm.replace('can_', '').replace('_', ' ').capitalize()} {'✅' if state else '❌'}",
-            callback_data=f"promote|toggle|{perm}|{target_user_id}"
-        )
-        for perm, state in temporary_permissions[target_user_id].items()
-    ]
+            callback_data=callback_data
+        ))
 
     buttons.append(InlineKeyboardButton("Save", callback_data=f"promote|save|{target_user_id}"))
     buttons.append(InlineKeyboardButton("Reset", callback_data=f"promote|reset|{target_user_id}"))
@@ -83,6 +85,13 @@ def create_permission_markup(target_user_id):
 @app.on_callback_query(filters.regex(r"promote\|"))
 async def handle_permission_toggle(client, callback_query: CallbackQuery):
     data = callback_query.data.split("|")
+
+    # Check if data has the expected length
+    if len(data) < 4:
+        await callback_query.answer("Invalid callback data. Please try again.", show_alert=True)
+        logger.error(f"Invalid callback data received: {callback_query.data}")
+        return
+
     action, target_user_id = data[1], int(data[3])
 
     if action == "toggle":
