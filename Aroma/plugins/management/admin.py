@@ -41,7 +41,9 @@ async def promote_user(client, message):
     # Check if the target user is already an admin
     target_user_member = await client.get_chat_member(chat_id, target_user_id)
     if target_user_member.privileges:
-        await client.send_message(chat_id, "User is already an admin and cannot be promoted again.")
+        await client.send_message(chat_id, "User is already an admin. You can change their permissions.")
+    else:
+        await client.send_message(chat_id, "User is not an admin and cannot be promoted again.")
         return
 
     if target_user_id not in temporary_permissions:
