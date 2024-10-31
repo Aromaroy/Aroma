@@ -78,7 +78,7 @@ def create_permission_markup(target_user_id):
 
     buttons.append(InlineKeyboardButton("Save", callback_data=f"promote|save|{target_user_id}"))
     buttons.append(InlineKeyboardButton("Reset", callback_data=f"promote|reset|{target_user_id}"))
-    buttons.append(InlineKeyboardButton("Close", callback_data=f"promote|close|{target_user_id}"))  # Include target_user_id if needed
+    buttons.append(InlineKeyboardButton("Close", callback_data=f"promote|close|{target_user_id}"))
 
     return InlineKeyboardMarkup([[button] for button in buttons])
 
@@ -86,19 +86,18 @@ def create_permission_markup(target_user_id):
 async def handle_permission_toggle(client, callback_query: CallbackQuery):
     data = callback_query.data.split("|")
 
-    # Check if data has the expected length
     if len(data) < 3:
         await callback_query.answer("Invalid callback data. Please try again.", show_alert=True)
         logger.error(f"Invalid callback data received: {callback_query.data}")
         return
 
     action = data[1]
-    target_user_id = int(data[-1])  # Always get the last element as target_user_id
+    target_user_id = int(data[-1])  # Get the last element as target_user_id
 
     if action == "toggle":
         await toggle_permission(callback_query, target_user_id, data[2])
     elif action == "save":
-        await save_permissions(callback_query, target_user_id)
+        await save_permissions(client, callback_query, target_user_id)  # Pass client here
     elif action == "reset":
         await reset_permissions(callback_query, target_user_id)
     elif action == "close":
@@ -115,7 +114,7 @@ async def toggle_permission(callback_query, target_user_id, perm_code):
     else:
         await callback_query.answer("No permissions found for this user.", show_alert=True)
 
-async def save_permissions(callback_query, target_user_id):
+async def save_permissions(client, callback_query, target_user_id):  # Accept client as parameter
     if target_user_id in temporary_permissions:
         permissions = temporary_permissions.pop(target_user_id)
         logger.info(f"Saving permissions for user {target_user_id}: {permissions}")
