@@ -46,7 +46,7 @@ async def promote_user(client, message):
     target_member = await client.get_chat_member(chat_id, target_user_id)
 
     if target_member.privileges:
-        promotion_record = await promotions_collection.find_one({"user_id": target_user_id, "chat_id": chat_id})
+        promotion_record = promotions_collection.find_one({"user_id": target_user_id, "chat_id": chat_id})
 
         if promotion_record:
             promoted_by = promotion_record['promoted_by']
@@ -67,7 +67,7 @@ async def promote_user(client, message):
     sent_message = await client.send_message(chat_id, "Choose permissions to grant:", reply_markup=markup)
     temporary_messages[target_user_id] = sent_message
 
-    await promotions_collection.insert_one({
+    promotions_collection.insert_one({
         "user_id": target_user_id,
         "chat_id": chat_id,
         "promoted_by": message.from_user.id,
