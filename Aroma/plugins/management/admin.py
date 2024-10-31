@@ -26,11 +26,7 @@ async def promote_user(client, message):
 
     user_member = await client.get_chat_member(chat_id, message.from_user.id)
 
-    if not user_member.privileges:
-        await client.send_message(chat_id, "You are not an admin to promote users.")
-        return
-
-    if not user_member.privileges.can_promote_members:
+    if not user_member.privileges or not user_member.privileges.can_promote_members:
         await client.send_message(chat_id, "You don't have permission to promote users.")
         return
 
@@ -82,6 +78,12 @@ def initialize_permissions(bot_privileges):
 
 @app.on_callback_query(filters.regex(r"promote\|permissions\|"))
 async def show_permissions(client, callback_query: CallbackQuery):
+    user_member = await client.get_chat_member(callback_query.message.chat.id, callback_query.from_user.id)
+    
+    if not user_member.privileges or not user_member.privileges.can_promote_members:
+        await callback_query.answer("You are not admin to use this button.", show_alert=True)
+        return
+
     target_user_id = int(callback_query.data.split("|")[-1])
     chat_id = callback_query.message.chat.id
 
