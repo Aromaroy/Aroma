@@ -42,7 +42,7 @@ async def promote_user(client, message):
         temporary_permissions[target_user_id] = initialize_permissions(bot_member.privileges)
 
     markup = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🕹 Permissions", url=f"https://t.me/{app.get_bot_username()}?start=permission_management_{target_user_id}"),
+        [InlineKeyboardButton("🕹 Permissions", callback_data=f"promote|permissions|{target_user_id}"),
          InlineKeyboardButton("Close", callback_data=f"promote|close|{target_user_id}")]
     ])
 
@@ -80,18 +80,80 @@ def initialize_permissions(bot_privileges):
         "can_manage_video_chats": False,
     }
 
-@app.on_message(filters.command("start"))
+@app.on_callback_query(filters.regex(r"promote\|permissions\|"))
+async def show_permissions(client, callback_query: CallbackQuery):
+    user_member = await client.get_chat_member(callback_query.message.chat.id, callback_query.from_user.id)
+
+    if not user_member.privileges or not user_member.privileges.can_promote_members:
+        await callback_query.answer("You are not admin to use this button.", show_alert=True)
+        return
+
+    target_user_id = int(callback_query.data.split("|")[-1])
+    bot_username = (await client.get_me()).username
+
+    # Construct the URL to open a DM with the bot
+    dm_url = f"https://t.me/{bot_username}?start=permissions_{target_user_id}"
+    
+    await callback_query.message.reply_text(
+        f"Click the link to manage permissions for the user: [Manage Permissions]({dm_url})",
+        disable_web_page_preview=True
+    )
+    await callback_query.answer()
+
+@app.on_message(filters.command('start'))
 async def start_handler(client, message):
-    if message.command[1].startswith("permission_management_"):
-        target_user_id = int(message.command[1].split("_")[-1])
-        admin_privileges = await get_chat_privileges_for_dm(client, message)
+    if len(message.command) > 1 and message.command[1].startswith("permissions_"):
+        target_user_id = int(message.command[1].split("_")[1])
         
-        markup = create_permission_markup(target_user_id, admin_privileges)
-        await client.send_message(
-            message.chat.id,
-            "Manage permissions:",
-            reply_markup=markup
-        )
+        if target_user_id in temporary_permissions:
+            markup = create_permission_markup(target_user_id, await get_chat_privileges(message))
+            await message.reply_text(
+                "Manage permissions here:",
+                reply_markup=markup
+            )
+        else:
+            await message.reply_text("No permissions found for this user.")
+    else:
+        await message.reply_text("Welcome! Use /promote to manage users.")
+
+@app.on_callback_query(filters.regex(r"promote\|"))
+async def handle_permission_toggle(client, callback_query: CallbackQuery):
+    data = callback_query.data.split("|")
+
+    if len(data) < 3:
+        await callback_query.answer("Invalid callback data. Please try again.", show_alert=True)
+        logger.error(f"Invalid callback data received: {callback_query.data}")
+        return
+
+    action = data[1]
+    target_user_id = int(data[-1])
+
+    user_member = await callback_query._client.get_chat_member(callback_query.message.chat.id, callback_query.from_user.id)
+    if not user_member.privileges or not user_member.privileges.can_promote_members:
+        await callback_query.answer("You are not admin to use this button.", show_alert=True)
+        return
+
+    if action == "toggle":
+        await toggle_permission(callback_query, target_user_id, data[2])
+    elif action == "save":
+        await save_permissions(callback_query._client, callback_query, target_user_id)
+    elif action == "close":
+        await close_permission_selection(callback_query)
+
+async def toggle_permission(callback_query, target_user_id, perm_code):
+    if target_user_id in temporary_permissions:
+        permissions_dict = temporary_permissions[target_user_id]
+        permissions_dict[perm_code] = not permissions_dict[perm_code]
+
+        markup = create_permission_markup(target_user_id, await get_chat_privileges(callback_query))
+        await callback_query.message.edit_reply_markup(markup)
+        await callback_query.answer(f"{perm_code.replace('can_', '').replace('_', ' ').capitalize()} has been toggled.", show_alert=True)
+    else:
+        await callback_query.answer("No permissions found for this user.", show_alert=True)
+
+async def get_chat_privileges(callback_query):
+    user_member = await callback_query._client.get_chat_member(callback_query.message.chat.id, callback_query.from_user.id)
+    return user_member.privileges
 
 def create_permission_markup(target_user_id, admin_privileges):
     buttons = []
@@ -100,8 +162,7 @@ def create_permission_markup(target_user_id, admin_privileges):
         can_grant = getattr(admin_privileges, perm, False)
         icon = "🔒" if not can_grant else "✅" if state else "❌"
 
-        # Create a callback for toggling permissions in DM
-        callback_data = f"toggle|{perm}|{target_user_id}"
+        callback_data = f"promote|toggle|{perm}|{target_user_id}"
         buttons.append(InlineKeyboardButton(
             f"{perm.replace('can_', '').replace('_', ' ').capitalize()} {icon}",
             callback_data=callback_data
@@ -118,42 +179,6 @@ def create_permission_markup(target_user_id, admin_privileges):
 
     return InlineKeyboardMarkup(button_rows)
 
-async def get_chat_privileges_for_dm(client, message):
-    user_member = await client.get_chat_member(message.chat.id, message.from_user.id)
-    return user_member.privileges
-
-@app.on_callback_query(filters.regex(r"toggle\|"))
-async def toggle_permission(client, callback_query: CallbackQuery):
-    data = callback_query.data.split("|")
-    perm_code = data[1]
-    target_user_id = int(data[2])
-
-    if target_user_id in temporary_permissions:
-        permissions_dict = temporary_permissions[target_user_id]
-        permissions_dict[perm_code] = not permissions_dict[perm_code]
-
-        markup = create_permission_markup(target_user_id, await get_chat_privileges_for_dm(client, callback_query))
-        await callback_query.message.edit_reply_markup(markup)
-        await callback_query.answer(f"{perm_code.replace('can_', '').replace('_', ' ').capitalize()} has been toggled.", show_alert=True)
-    else:
-        await callback_query.answer("No permissions found for this user.", show_alert=True)
-
-@app.on_callback_query(filters.regex(r"promote\|"))
-async def handle_permission_toggle(client, callback_query: CallbackQuery):
-    data = callback_query.data.split("|")
-    action = data[1]
-    target_user_id = int(data[-1])
-
-    user_member = await client.get_chat_member(callback_query.message.chat.id, callback_query.from_user.id)
-    if not user_member.privileges or not user_member.privileges.can_promote_members:
-        await callback_query.answer("You are not admin to use this button.", show_alert=True)
-        return
-
-    if action == "save":
-        await save_permissions(callback_query._client, callback_query, target_user_id)
-    elif action == "close":
-        await close_permission_selection(callback_query)
-
 async def save_permissions(client, callback_query, target_user_id):
     if target_user_id in temporary_permissions:
         permissions = temporary_permissions.pop(target_user_id)
@@ -165,7 +190,12 @@ async def save_permissions(client, callback_query, target_user_id):
             updated_member = await client.get_chat_member(chat_id, target_user_id)
             user_name = updated_member.user.first_name or updated_member.user.username or "User"
 
+            await callback_query.message.delete()
             await callback_query.answer(f"{user_name} has been promoted.", show_alert=True)
+
+            if target_user_id in temporary_messages:
+                await temporary_messages[target_user_id].delete()
+                del temporary_messages[target_user_id]
 
         except Exception as e:
             await callback_query.answer(f"Failed to promote user: {str(e)}", show_alert=True)
@@ -175,4 +205,13 @@ async def save_permissions(client, callback_query, target_user_id):
 
 async def close_permission_selection(callback_query):
     await callback_query.message.delete()
+    target_user_id = int(callback_query.data.split("|")[-1])
+
+    if target_user_id in temporary_messages:
+        await temporary_messages[target_user_id].delete()
+        del temporary_messages[target_user_id]
+
     await callback_query.answer("Permissions selection closed without saving.", show_alert=True)
+
+async def cleanup_temporary_permissions():
+    pass
