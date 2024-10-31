@@ -265,36 +265,3 @@ async def demote_user(client, message):
     except Exception as e:
         await client.send_message(chat_id, f"Failed to demote user: {str(e)}")
         logger.error(f"Error demoting user {target_user_id}: {e}")
-
-@app.on_message(filters.command('purge') & filters.group)
-async def purge_user(client, message):
-    chat_id = message.chat.id
-    bot_user = await client.get_me()
-
-    try:
-        bot_member = await client.get_chat_member(chat_id, bot_user.id)
-        if not bot_member.privileges.can_delete_messages:
-            await client.send_message(chat_id, "I don't have permission to delete messages.")
-            return
-    except Exception as e:
-        await client.send_message(chat_id, f"Error retrieving bot status: {e}")
-        return
-
-    user_member = await client.get_chat_member(chat_id, message.from_user.id)
-
-    if not user_member.privileges or not user_member.privileges.can_delete_messages:
-        await client.send_message(chat_id, "You don't have permission to delete messages.")
-        return
-
-    if message.reply_to_message:
-        message_id = message.reply_to_message.id
-        deleted_count = 0
-
-        async for msg in client.get_chat_history(chat_id, limit=100):
-            if msg.id < message_id:  # Only delete messages older than the replied message
-                await client.delete_messages(chat_id, msg.id)
-                deleted_count += 1
-
-        await client.send_message(chat_id, f"Deleted {deleted_count} messages.")
-    else:
-        await client.send_message(chat_id, "Please reply to the message you want to purge.")
