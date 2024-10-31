@@ -90,7 +90,7 @@ async def show_permissions(client, callback_query: CallbackQuery):
     group_name = (await client.get_chat(chat_id)).title
 
     markup = create_permission_markup(target_user_id, await get_chat_privileges(callback_query))
-    
+
     await callback_query.message.edit_text(
         f"👤 {target_user_name} [{target_user_id}]\n👥 {group_name}",
         reply_markup=markup
@@ -110,12 +110,16 @@ def create_permission_markup(target_user_id, admin_privileges):
             callback_data=callback_data
         ))
 
-    buttons.append(InlineKeyboardButton("Save", callback_data=f"promote|save|{target_user_id}"))
-    buttons.append(InlineKeyboardButton("Close", callback_data=f"promote|close|{target_user_id}"))
+    save_button = InlineKeyboardButton("Save", callback_data=f"promote|save|{target_user_id}")
+    close_button = InlineKeyboardButton("Close", callback_data=f"promote|close|{target_user_id}")
 
-    # Arrange Save and Close buttons in the same line
-    buttons = [buttons[-2], buttons[-1]] + buttons[:-2]
-    return InlineKeyboardMarkup([buttons[i:i + 1] for i in range(0, len(buttons))])
+    buttons.append(save_button)
+    buttons.append(close_button)
+
+    button_rows = [buttons[i:i + 1] for i in range(0, len(buttons) - 2)]
+    button_rows.append([save_button, close_button])
+
+    return InlineKeyboardMarkup(button_rows)
 
 @app.on_callback_query(filters.regex(r"promote\|"))
 async def handle_permission_toggle(client, callback_query: CallbackQuery):
