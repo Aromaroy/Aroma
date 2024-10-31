@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 temporary_permissions = {}
 temporary_messages = {}
+promotion_sources = {}  # Track who promoted the user
 
 @app.on_message(filters.command('promote') & filters.group)
 async def promote_user(client, message):
@@ -26,11 +27,7 @@ async def promote_user(client, message):
 
     user_member = await client.get_chat_member(chat_id, message.from_user.id)
 
-    if not user_member.privileges:
-        await client.send_message(chat_id, "You are not an admin to promote users.")
-        return
-
-    if not user_member.privileges.can_promote_members:
+    if not user_member.privileges or not user_member.privileges.can_promote_members:
         await client.send_message(chat_id, "You don't have permission to promote users.")
         return
 
@@ -136,6 +133,11 @@ async def get_chat_privileges(callback_query):
 
 async def save_permissions(client, callback_query, target_user_id):
     if target_user_id in temporary_permissions:
+        # Check if the user is already promoted by someone else
+        if target_user_id in promotion_sources and promotion_sources[target_user_id] != client.get_me().id:
+            await callback_query.answer("This user is already promoted by someone else.", show_alert=True)
+            return
+        
         permissions = temporary_permissions.pop(target_user_id)
         privileges = ChatPrivileges(**permissions)
 
@@ -144,6 +146,9 @@ async def save_permissions(client, callback_query, target_user_id):
             await client.promote_chat_member(chat_id, target_user_id, privileges=privileges)
             updated_member = await client.get_chat_member(chat_id, target_user_id)
             user_name = updated_member.user.first_name or updated_member.user.username or "User"
+
+            # Track who promoted the user
+            promotion_sources[target_user_id] = client.get_me().id
 
             await callback_query.message.edit_reply_markup(reply_markup=None)
             await callback_query.answer(f"{user_name} has been promoted.", show_alert=True)
