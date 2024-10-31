@@ -26,11 +26,7 @@ async def promote_user(client, message):
 
     user_member = await client.get_chat_member(chat_id, message.from_user.id)
 
-    if not user_member.privileges:
-        await client.send_message(chat_id, "You are not an admin to promote users.")
-        return
-
-    if not user_member.privileges.can_promote_members:
+    if not user_member.privileges or not user_member.privileges.can_promote_members:
         await client.send_message(chat_id, "You don't have permission to promote users.")
         return
 
@@ -107,6 +103,11 @@ async def show_permissions(client, callback_query: CallbackQuery):
 
     target_user_id = int(callback_query.data.split("|")[-1])
     chat_id = callback_query.message.chat.id
+
+    if target_user_id in temporary_permissions:
+        logger.info(f"Displaying permissions for user {target_user_id}: {temporary_permissions[target_user_id]}")
+    else:
+        logger.warning(f"No temporary permissions found for user {target_user_id}")
 
     target_member = await client.get_chat_member(chat_id, target_user_id)
     target_user_name = target_member.user.first_name or target_member.user.username or "User"
@@ -194,9 +195,7 @@ async def save_permissions(client, callback_query, target_user_id):
             updated_member = await client.get_chat_member(chat_id, target_user_id)
             user_name = updated_member.user.first_name or updated_member.user.username or "User"
 
-            # Deleting the confirmation message after saving permissions
             await callback_query.message.delete()
-
             await callback_query.answer(f"{user_name} has been promoted.", show_alert=True)
 
             if target_user_id in temporary_messages:
