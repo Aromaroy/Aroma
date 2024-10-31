@@ -56,13 +56,13 @@ async def get_target_user_id(client, chat_id, message):
 def initialize_permissions(bot_privileges):
     return {
         "can_change_info": False,
-        "can_invite_users": bot_privileges.can_invite_users,
-        "can_delete_messages": bot_privileges.can_delete_messages,
+        "can_invite_users": False,
+        "can_delete_messages": False,
         "can_restrict_members": False,
-        "can_pin_messages": bot_privileges.can_pin_messages,
+        "can_pin_messages": False,
         "can_promote_members": False,
-        "can_manage_chat": bot_privileges.can_manage_chat,
-        "can_manage_video_chats": bot_privileges.can_manage_video_chats,
+        "can_manage_chat": False,
+        "can_manage_video_chats": False,
     }
 
 def create_permission_markup(target_user_id):
