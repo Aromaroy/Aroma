@@ -235,7 +235,7 @@ async def demote_user(client, message):
 
     target_user_member = await client.get_chat_member(chat_id, target_user_id)
 
-    if target_user_member.status != 'member':
+    if target_user_member.status != 'administrator':
         await client.send_message(chat_id, "This user is already not an admin.")
         return
 
