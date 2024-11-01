@@ -1,6 +1,7 @@
 import logging
 from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, ChatPrivileges
+from pyrogram.enums import ChatMemberStatus, ChatMembersFilter, ChatType
+from pyrogram.types import ChatPrivileges, ChatPermissions, Message
 from Aroma import app
 
 logging.basicConfig(level=logging.INFO)
@@ -48,7 +49,8 @@ async def demote_user(client, message):
     target_user_member = await client.get_chat_member(chat_id, target_user_id)
     logger.info(f"Target User ID: {target_user_id}, Status: {target_user_member.status}, Privileges: {target_user_member.privileges}")
 
-    if target_user_member.status != 'administrator':
+    # Check using the ChatMemberStatus enum
+    if target_user_member.status != ChatMemberStatus.ADMINISTRATOR:
         await client.send_message(chat_id, "This user is already not an admin.")
         return
 
