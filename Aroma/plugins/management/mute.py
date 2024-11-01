@@ -61,8 +61,11 @@ async def mute_user(client, message):
         await client.send_message(chat_id, "You cannot mute an admin.")
         return
 
+    if not target_user_member.privileges.can_send_messages:
+        await client.send_message(chat_id, "User is already muted.")
+        return
+
     try:
-        # Create ChatPermissions instance to revoke specific permissions
         permissions = ChatPermissions(
             can_send_messages=False,
             can_send_media_messages=False,
