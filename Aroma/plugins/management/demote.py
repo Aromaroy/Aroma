@@ -6,6 +6,16 @@ from Aroma import app
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+async def get_target_user_id(client, chat_id, message):
+    if message.reply_to_message:
+        return message.reply_to_message.from_user.id
+    elif message.command[1:]:
+        target_username = message.command[1]
+        user = await client.get_users(target_username)
+        return user.id
+    else:
+        return None
+
 @app.on_message(filters.command('demote') & filters.group)
 async def demote_user(client, message):
     chat_id = message.chat.id
