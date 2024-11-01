@@ -62,7 +62,22 @@ async def mute_user(client, message):
         return
 
     try:
-        await client.restrict_chat_member(chat_id, target_user_id, permissions=ChatPrivileges(can_send_messages=False))
+        # Create ChatPermissions instance to revoke all permissions
+        permissions = ChatPermissions(
+            can_send_messages=False,
+            can_send_media_messages=False,
+            can_send_stickers=False,
+            can_send_animations=False,
+            can_send_games=False,
+            can_use_inline_bots=False,
+            can_add_web_page_previews=False,
+            can_invite_to_chats=False,
+            can_pin_messages=False,
+            can_change_info=False,
+            can_delete_messages=False
+        )
+        
+        await client.restrict_chat_member(chat_id, target_user_id, permissions=permissions)
         await client.send_message(chat_id, "User has been muted.")
     except Exception as e:
         await client.send_message(chat_id, f"Failed to mute user: {str(e)}")
