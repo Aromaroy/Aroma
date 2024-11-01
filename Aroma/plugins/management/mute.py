@@ -25,12 +25,12 @@ async def mute_user(client, message):
 
     try:
         bot_member = await client.get_chat_member(chat_id, bot_user.id)
-        logger.info(f"Bot Member Permissions: {bot_member.permissions}")
+        logger.info(f"Bot Member Privileges: {bot_member.privileges}")
 
         if bot_member.status != ChatMemberStatus.ADMINISTRATOR:
             await client.send_message(chat_id, "I am not an admin.")
             return
-        if not bot_member.permissions.can_change_info:
+        if not bot_member.privileges.can_change_info:
             await client.send_message(chat_id, "I don't have rights to mute users.")
             return
     except Exception as e:
@@ -39,13 +39,13 @@ async def mute_user(client, message):
         return
 
     user_member = await client.get_chat_member(chat_id, message.from_user.id)
-    logger.info(f"User Member Permissions: {user_member.permissions}")
+    logger.info(f"User Member Privileges: {user_member.privileges}")
 
     if user_member.status != ChatMemberStatus.ADMINISTRATOR:
         await client.send_message(chat_id, "You are not an admin.")
         return
 
-    if not user_member.permissions.can_change_info:
+    if not user_member.privileges.can_change_info:
         await client.send_message(chat_id, "You don't have rights to mute this user.")
         return
 
@@ -55,13 +55,13 @@ async def mute_user(client, message):
         return
 
     target_user_member = await client.get_chat_member(chat_id, target_user_id)
-    logger.info(f"Target User ID: {target_user_id}, Status: {target_user_member.status}, Permissions: {target_user_member.permissions}")
+    logger.info(f"Target User ID: {target_user_id}, Status: {target_user_member.status}, Privileges: {target_user_member.privileges}")
 
     if target_user_member.status == ChatMemberStatus.ADMINISTRATOR:
         await client.send_message(chat_id, "You cannot mute an admin.")
         return
 
-    if not target_user_member.permissions.can_send_messages:
+    if not target_user_member.permission s.can_send_messages:
         await client.send_message(chat_id, "User is already muted.")
         return
 
