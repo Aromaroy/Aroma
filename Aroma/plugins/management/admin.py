@@ -1,7 +1,7 @@
 import logging
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, ChatPrivileges
-from Aroma import app
+from aroma import app
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
