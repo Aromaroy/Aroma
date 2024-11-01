@@ -10,17 +10,21 @@ logger = logging.getLogger(__name__)
 async def demote_user(client, message):
     chat_id = message.chat.id
     bot_user = await client.get_me()
+    logger.info(f"Bot ID: {bot_user.id}, Chat ID: {chat_id}")
 
     try:
         bot_member = await client.get_chat_member(chat_id, bot_user.id)
+        logger.info(f"Bot Member Privileges: {bot_member.privileges}")
         if not bot_member.privileges.can_promote_members:
             await client.send_message(chat_id, "I don't have permission to demote members.")
             return
     except Exception as e:
         await client.send_message(chat_id, f"Error retrieving bot status: {e}")
+        logger.error(f"Error retrieving bot status: {e}")
         return
 
     user_member = await client.get_chat_member(chat_id, message.from_user.id)
+    logger.info(f"User Member Privileges: {user_member.privileges}")
 
     if not user_member.privileges or not user_member.privileges.can_promote_members:
         await client.send_message(chat_id, "You are not an admin.")
@@ -32,7 +36,8 @@ async def demote_user(client, message):
         return
 
     target_user_member = await client.get_chat_member(chat_id, target_user_id)
-    
+    logger.info(f"Target User ID: {target_user_id}, Status: {target_user_member.status}, Privileges: {target_user_member.privileges}")
+
     if target_user_member.status != 'administrator':
         await client.send_message(chat_id, "This user is already not an admin.")
         return
@@ -46,4 +51,4 @@ async def demote_user(client, message):
         await client.send_message(chat_id, "User has been demoted.")
     except Exception as e:
         await client.send_message(chat_id, f"Failed to demote user: {str(e)}")
-
+        logger.error(f"Failed to demote user: {str(e)}")
