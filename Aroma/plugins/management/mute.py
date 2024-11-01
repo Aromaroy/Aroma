@@ -1,7 +1,7 @@
 import logging
 from pyrogram import Client, filters
-from pyrogram.enums import ChatMemberStatus, ChatMembersFilter, ChatType
-from pyrogram.types import ChatPrivileges, ChatPermissions, Message
+from pyrogram.enums import ChatMemberStatus
+from pyrogram.types import ChatPermissions
 from Aroma import app
 
 logging.basicConfig(level=logging.INFO)
@@ -61,7 +61,14 @@ async def mute_user(client, message):
         await client.send_message(chat_id, "You cannot mute an admin.")
         return
 
-    if not target_user_member.permissions.can_send_messages:
+    if not all([
+        not target_user_member.permissions.can_send_messages,
+        not target_user_member.permissions.can_send_media_messages,
+        not target_user_member.permissions.can_send_polls,
+        not target_user_member.permissions.can_send_other_messages,
+        not target_user_member.permissions.can_add_web_page_previews,
+        not target_user_member.permissions.can_pin_messages
+    ]):
         await client.send_message(chat_id, "User is already muted.")
         return
 
