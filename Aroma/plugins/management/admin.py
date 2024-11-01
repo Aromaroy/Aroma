@@ -217,7 +217,7 @@ async def demote_user(client, message):
     try:
         bot_member = await client.get_chat_member(chat_id, bot_user.id)
         if not bot_member.privileges.can_promote_members:
-            await client.send_message(chat_id, "ɪ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ ᴘᴇʀᴍɪꜱꜱɪᴏɴ ᴛᴏ ᴅᴇᴍᴏᴛᴇ ᴍᴇᴍʙᴇʀꜱ.")
+            await client.send_message(chat_id, "I don't have permission to demote members.")
             return
     except Exception as e:
         await client.send_message(chat_id, f"Error retrieving bot status: {e}")
@@ -226,7 +226,7 @@ async def demote_user(client, message):
     user_member = await client.get_chat_member(chat_id, message.from_user.id)
 
     if not user_member.privileges or not user_member.privileges.can_promote_members:
-        await client.send_message(chat_id, "ʏᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴀɴ ᴀᴅᴍɪɴ.")
+        await client.send_message(chat_id, "You are not an admin.")
         return
 
     target_user_id = await get_target_user_id(client, chat_id, message)
@@ -235,15 +235,15 @@ async def demote_user(client, message):
 
     target_user_member = await client.get_chat_member(chat_id, target_user_id)
 
-    if not target_user_member.privileges or not target_user_member.privileges.can_promote_members:
-        await client.send_message(chat_id, "ᴛʜɪs ᴜsᴇʀ ɪs ᴀʟʀᴇᴀᴅʏ ɴᴏᴛ ᴀɴ ᴀᴅᴍɪɴ.")
+    if target_user_member.status != 'member':
+        await client.send_message(chat_id, "This user is already not an admin.")
         return
 
     try:
         await client.promote_chat_member(chat_id, target_user_id, privileges=ChatPrivileges())
-        await client.send_message(chat_id, "ᴜꜱᴇʀ ʜᴀꜱ ʙᴇᴇɴ ᴅᴇᴍᴏᴛᴇᴅ.")
+        await client.send_message(chat_id, "User has been demoted.")
     except Exception as e:
         if "promoted by another admin" in str(e) or "can not demote" in str(e):
-            await client.send_message(chat_id, "ᴜꜱᴇʀ ᴡᴀs ᴘʀᴏᴍᴏᴛᴇᴅ ʙʏ ᴀɴᴏᴛʜᴇʀ ʙᴏᴛ/ᴀᴅᴍɪɴ, ᴛʜᴇʀᴇғᴏʀᴇ ɪ ᴄᴀɴ'ᴛ ᴅᴇᴍᴏᴛᴇ ᴛʜᴇᴍ.")
+            await client.send_message(chat_id, "User was promoted by another admin; therefore, I can't demote them.")
         else:
             await client.send_message(chat_id, f"Failed to demote user: {str(e)}")
