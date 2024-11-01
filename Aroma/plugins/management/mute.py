@@ -1,7 +1,7 @@
 import logging
 from pyrogram import Client, filters
-from pyrogram.enums import ChatMemberStatus
-from pyrogram.types import ChatPermissions
+from pyrogram.enums import ChatMemberStatus, ChatMembersFilter, ChatType
+from pyrogram.types import ChatPrivileges, ChatPermissions, Message
 from Aroma import app
 
 logging.basicConfig(level=logging.INFO)
@@ -55,10 +55,6 @@ async def mute_user(client, message):
         return
 
     target_user_member = await client.get_chat_member(chat_id, target_user_id)
-    if target_user_member is None:
-        await client.send_message(chat_id, "Could not retrieve target user's member status.")
-        return
-
     logger.info(f"Target User ID: {target_user_id}, Status: {target_user_member.status}, Privileges: {target_user_member.privileges}")
 
     if target_user_member.status == ChatMemberStatus.ADMINISTRATOR:
