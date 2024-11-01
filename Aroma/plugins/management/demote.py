@@ -1,7 +1,6 @@
 import logging
 from pyrogram import Client, filters
-from pyrogram.enums import ChatMemberStatus, ChatMembersFilter, ChatType
-from pyrogram.types import ChatPrivileges, ChatPermissions, Message
+from pyrogram.enums import ChatMemberStatus, ChatPrivileges
 from Aroma import app
 
 logging.basicConfig(level=logging.INFO)
@@ -26,8 +25,12 @@ async def demote_user(client, message):
     try:
         bot_member = await client.get_chat_member(chat_id, bot_user.id)
         logger.info(f"Bot Member Privileges: {bot_member.privileges}")
+        
+        if bot_member.status != ChatMemberStatus.ADMINISTRATOR:
+            await client.send_message(chat_id, "I am not an admin.")
+            return
         if not bot_member.privileges.can_promote_members:
-            await client.send_message(chat_id, "I don't have permission to demote members.")
+            await client.send_message(chat_id, "I don't have rights to demote users.")
             return
     except Exception as e:
         await client.send_message(chat_id, f"Error retrieving bot status: {e}")
@@ -49,13 +52,16 @@ async def demote_user(client, message):
     target_user_member = await client.get_chat_member(chat_id, target_user_id)
     logger.info(f"Target User ID: {target_user_id}, Status: {target_user_member.status}, Privileges: {target_user_member.privileges}")
 
-    # Check using the ChatMemberStatus enum
     if target_user_member.status != ChatMemberStatus.ADMINISTRATOR:
         await client.send_message(chat_id, "This user is already not an admin.")
         return
 
     if target_user_member.promoted_by and target_user_member.promoted_by.id != bot_user.id:
         await client.send_message(chat_id, "I can't demote this user because they were promoted by another admin.")
+        return
+
+    if not user_member.privileges.can_promote_members:
+        await client.send_message(chat_id, "You don't have rights to demote this user.")
         return
 
     try:
