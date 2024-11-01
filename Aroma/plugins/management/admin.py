@@ -221,7 +221,6 @@ async def demote_user(client, message):
             return
     except Exception as e:
         await client.send_message(chat_id, f"Error retrieving bot status: {e}")
-        logger.error(f"Error retrieving bot status: {e}")
         return
 
     user_member = await client.get_chat_member(chat_id, message.from_user.id)
@@ -236,12 +235,8 @@ async def demote_user(client, message):
 
     target_member = await client.get_chat_member(chat_id, target_user_id)
 
-    if not target_member.privileges:
+    if not target_member.privileges or not target_member.privileges.can_promote_members:
         await client.send_message(chat_id, f"{target_member.user.first_name} ɪs ᴀʟʀᴇᴀᴅʏ ɴᴏᴛ ᴀɴ ᴀᴅᴍɪɴ.")
-        return
-
-    if target_member.privileges.can_promote_members:
-        await client.send_message(chat_id, f"{target_member.user.first_name} ɪs ᴀʟʀᴇᴀᴅʏ ᴀɴ ᴀᴅᴍɪɴ.")
         return
 
     promoted_by = target_member.privileges.promoted_by if hasattr(target_member.privileges, 'promoted_by') else None
@@ -260,6 +255,5 @@ async def demote_user(client, message):
             await client.send_message(chat_id, f"{target_member.user.first_name} ʜᴀꜱ ʙᴇᴇɴ ᴅᴇᴍᴏᴛᴇᴅ.")
         except Exception as e:
             await client.send_message(chat_id, f"Failed to demote user: {str(e)}")
-            logger.error(f"Error demoting user {target_user_id}: {e}")
     else:
         await client.send_message(chat_id, f"{target_member.user.first_name} ᴄᴀɴ'ᴛ ʙᴇ ᴅᴇᴍᴏᴛᴇᴅ. ᴛʜʏ ᴡᴇʀᴇ ᴘʀᴏᴍᴏᴛᴇᴅ ʙʏ {promoted_by}.")
