@@ -26,7 +26,7 @@ async def demote_user(client, message):
     try:
         bot_member = await client.get_chat_member(chat_id, bot_user.id)
         logger.info(f"Bot Member Privileges: {bot_member.privileges}")
-        
+
         if bot_member.status != ChatMemberStatus.ADMINISTRATOR:
             await client.send_message(chat_id, "I am not an admin.")
             return
@@ -41,8 +41,14 @@ async def demote_user(client, message):
     user_member = await client.get_chat_member(chat_id, message.from_user.id)
     logger.info(f"User Member Privileges: {user_member.privileges}")
 
-    if not user_member.privileges or not user_member.privileges.can_promote_members:
+    # Check if the user is an admin
+    if user_member.status != ChatMemberStatus.ADMINISTRATOR:
         await client.send_message(chat_id, "You are not an admin.")
+        return
+
+    # Check if the user has the rights to promote/demote members
+    if not user_member.privileges.can_promote_members:
+        await client.send_message(chat_id, "You don't have rights to demote this user.")
         return
 
     target_user_id = await get_target_user_id(client, chat_id, message)
@@ -59,10 +65,6 @@ async def demote_user(client, message):
 
     if target_user_member.promoted_by and target_user_member.promoted_by.id != bot_user.id:
         await client.send_message(chat_id, "I can't demote this user because they were promoted by another admin.")
-        return
-
-    if not user_member.privileges.can_promote_members:
-        await client.send_message(chat_id, "You don't have rights to demote this user.")
         return
 
     try:
