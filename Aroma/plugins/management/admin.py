@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 temporary_permissions = {}
 temporary_messages = {}
 
-@app.on_message(filters.command('promote') & filters.group)
+@@app.on_message(filters.command('promote') & filters.group)
 async def promote_user(client, message):
     chat_id = message.chat.id
     bot_user = await client.get_me()
