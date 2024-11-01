@@ -62,21 +62,18 @@ async def mute_user(client, message):
         return
 
     try:
-        # Create ChatPermissions instance to revoke all permissions
+        # Create ChatPermissions instance to revoke specific permissions
         permissions = ChatPermissions(
             can_send_messages=False,
             can_send_media_messages=False,
-            can_send_stickers=False,
             can_send_animations=False,
             can_send_games=False,
             can_use_inline_bots=False,
             can_add_web_page_previews=False,
             can_invite_to_chats=False,
-            can_pin_messages=False,
-            can_change_info=False,
-            can_delete_messages=False
+            can_pin_messages=False
         )
-        
+
         await client.restrict_chat_member(chat_id, target_user_id, permissions=permissions)
         await client.send_message(chat_id, "User has been muted.")
     except Exception as e:
