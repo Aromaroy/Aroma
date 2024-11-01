@@ -61,7 +61,7 @@ async def mute_user(client, message):
         await client.send_message(chat_id, "You cannot mute an admin.")
         return
 
-    if not target_user_member.permission s.can_send_messages:
+    if not target_user_member.permissions.can_send_messages:
         await client.send_message(chat_id, "User is already muted.")
         return
 
