@@ -66,7 +66,6 @@ async def mute_user(client, message):
         permissions = ChatPermissions(
             can_send_messages=False,
             can_send_media_messages=False,
-            can_send_games=False,
             can_use_inline_bots=False,
             can_add_web_page_previews=False,
             can_invite_to_chats=False,
