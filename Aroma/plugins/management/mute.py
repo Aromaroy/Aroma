@@ -69,7 +69,6 @@ async def mute_user(client, message):
             can_send_polls=False,
             can_send_other_messages=False,
             can_add_web_page_previews=False,
-            can_invite_to_chats=False,
             can_pin_messages=False
         )
 
