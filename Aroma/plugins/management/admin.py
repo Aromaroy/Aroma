@@ -229,6 +229,11 @@ async def demote_user(client, message):
         await client.send_message(chat_id, "You are not an admin.")
         return
 
+    # Check if the user is a member of the group
+    if user_member.status not in ['member', 'administrator']:
+        await client.send_message(chat_id, "You are not a member of this group.")
+        return
+
     target_user_id = await get_target_user_id(client, chat_id, message)
     if target_user_id is None:
         return
@@ -239,11 +244,12 @@ async def demote_user(client, message):
         await client.send_message(chat_id, "This user is already not an admin.")
         return
 
+    if target_user_member.promoted_by and target_user_member.promoted_by.id != bot_user.id:
+        await client.send_message(chat_id, "I can't demote this user because they were promoted by another admin.")
+        return
+
     try:
         await client.promote_chat_member(chat_id, target_user_id, privileges=ChatPrivileges())
         await client.send_message(chat_id, "User has been demoted.")
     except Exception as e:
-        if "promoted by another admin" in str(e) or "can not demote" in str(e):
-            await client.send_message(chat_id, "User was promoted by another admin; therefore, I can't demote them.")
-        else:
-            await client.send_message(chat_id, f"Failed to demote user: {str(e)}")
+        await client.send_message(chat_id, f"Failed to demote user: {str(e)}")
