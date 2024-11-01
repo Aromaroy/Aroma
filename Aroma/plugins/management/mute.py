@@ -1,7 +1,6 @@
 import logging
 from pyrogram import Client, filters
-from pyrogram.enums import ChatMemberStatus, ChatMembersFilter, ChatType
-from pyrogram.types import ChatPrivileges, ChatPermissions, Message
+from pyrogram.enums import ChatMemberStatus, ChatPrivileges
 from Aroma import app
 
 logging.basicConfig(level=logging.INFO)
@@ -41,12 +40,10 @@ async def mute_user(client, message):
     user_member = await client.get_chat_member(chat_id, message.from_user.id)
     logger.info(f"User Member Privileges: {user_member.privileges}")
 
-    # Check if the user is an admin
     if user_member.status != ChatMemberStatus.ADMINISTRATOR:
         await client.send_message(chat_id, "You are not an admin.")
         return
 
-    # Check if the user has the rights to change member permissions
     if not user_member.privileges.can_change_info:
         await client.send_message(chat_id, "You don't have rights to mute this user.")
         return
@@ -59,18 +56,15 @@ async def mute_user(client, message):
     target_user_member = await client.get_chat_member(chat_id, target_user_id)
     logger.info(f"Target User ID: {target_user_id}, Status: {target_user_member.status}, Privileges: {target_user_member.privileges}")
 
-    # Check if the user is already muted
-    if target_user_member.privileges.can_send_messages == False:
+    if target_user_member.privileges is None or not target_user_member.privileges.can_send_messages:
         await client.send_message(chat_id, "This user is already muted.")
         return
 
-    # Mute the user by updating their permissions
     if target_user_member.status == ChatMemberStatus.ADMINISTRATOR:
         await client.send_message(chat_id, "You cannot mute an admin.")
         return
 
     try:
-        # Mute the user by revoking their permissions
         await client.restrict_chat_member(chat_id, target_user_id, permissions=ChatPrivileges(can_send_messages=False))
         await client.send_message(chat_id, "User has been muted.")
     except Exception as e:
