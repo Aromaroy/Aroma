@@ -208,3 +208,36 @@ async def close_permission_selection(callback_query):
 
 async def cleanup_temporary_permissions():
     pass
+
+@app.on_message(filters.command('demote') & filters.group)
+async def demote_user(client, message):
+    chat_id = message.chat.id
+    bot_user = await client.get_me()
+
+    try:
+        bot_member = await client.get_chat_member(chat_id, bot_user.id)
+        if not bot_member.privileges.can_promote_members:
+            await client.send_message(chat_id, "ɪ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ ᴘᴇʀᴍɪꜱꜱɪᴏɴ ᴛᴏ ᴅᴇᴍᴏᴛᴇ ᴍᴇᴍʙᴇʀꜱ.")
+            return
+    except Exception as e:
+        await client.send_message(chat_id, f"Error retrieving bot status: {e}")
+        return
+
+    user_member = await client.get_chat_member(chat_id, message.from_user.id)
+
+    if not user_member.privileges or not user_member.privileges.can_promote_members:
+        await client.send_message(chat_id, "ʏᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴀɴ ᴀᴅᴍɪɴ.")
+        return
+
+    target_user_id = await get_target_user_id(client, chat_id, message)
+    if target_user_id is None:
+        return
+
+    try:
+        await client.promote_chat_member(chat_id, target_user_id, privileges=ChatPrivileges())
+        await client.send_message(chat_id, "ᴜꜱᴇʀ ʜᴀꜱ ʙᴇᴇɴ ᴅᴇᴍᴏᴛᴇᴅ.")
+    except Exception as e:
+        if "promoted by another admin" in str(e) or "can not demote" in str(e):
+            await client.send_message(chat_id, "ᴜꜱᴇʀ ᴡᴀs ᴘʀᴏᴍᴏᴛᴇᴅ ʙʏ ᴀɴᴏᴛʜᴇʀ ʙᴏᴛ/ᴀᴅᴍɪɴ, ᴛʜᴇʀᴇғᴏʀᴇ ɪ ᴄᴀɴ'ᴛ ᴅᴇᴍᴏᴛᴇ ᴛʜᴇᴍ.")
+        else:
+            await client.send_message(chat_id, f"Failed to demote user: {str(e)}")
