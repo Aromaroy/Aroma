@@ -241,7 +241,10 @@ async def demote_user(client, message):
     target_member = await client.get_chat_member(chat_id, target_user_id)
 
     if not target_member.privileges or not target_member.privileges.can_promote_members:
-        await client.send_message(chat_id, f"{target_member.user.first_name} ɪs ᴀʟʀᴇᴀᴅʏ ɴᴏᴛ ᴀɴ ᴀᴅᴍɪɴ.")
+        if target_member.user.id == target_member.privileges.promoted_by:
+            await client.send_message(chat_id, f"{target_member.user.first_name} ᴄᴀɴ'ᴛ ʙᴇ ᴅᴇᴍᴏᴛᴇᴅ. ᴛʜᴇʏ ᴡᴇʀᴇ ᴘʀᴏᴍᴏᴛᴇᴅ ʙʏ ᴛʜᴇᴍꜱᴇʟᴠᴇꜱ.")
+        else:
+            await client.send_message(chat_id, f"{target_member.user.first_name} ɪs ᴀʟʀᴇᴀᴅʏ ɴᴏᴛ ᴀɴ ᴀᴅᴍɪɴ.")
         return
 
     if target_member.privileges.can_promote_members or target_member.privileges.can_restrict_members:
