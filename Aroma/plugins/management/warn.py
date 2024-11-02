@@ -3,7 +3,6 @@ from pymongo import MongoClient
 from pyrogram import Client, filters
 from pyrogram.enums import ChatMemberStatus
 from config import MONGO_DB_URI
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from Aroma import app
 
 mongo_client = MongoClient(MONGO_DB_URI)
@@ -42,10 +41,8 @@ async def warn_user(client, message):
     try:
         bot_member = await client.get_chat_member(chat_id, bot_user.id)
         if bot_member.status != ChatMemberStatus.ADMINISTRATOR:
-            await client.send_message(chat_id, "I am not an admin.")
             return
         if not bot_member.privileges.can_restrict_members:
-            await client.send_message(chat_id, "I don't have rights to warn this user.")
             return
     except Exception as e:
         logger.error(f"Error retrieving bot status: {e}")
@@ -53,44 +50,31 @@ async def warn_user(client, message):
 
     user_member = await client.get_chat_member(chat_id, message.from_user.id)
     if user_member.status != ChatMemberStatus.ADMINISTRATOR:
-        await client.send_message(chat_id, "You are not an admin.")
         return
 
     if not user_member.privileges.can_restrict_members:
-        await client.send_message(chat_id, "You don't have rights to warn this user.")
         return
 
     target_user_id = await get_target_user_id(client, chat_id, message)
     if target_user_id is None:
-        await client.send_message(chat_id, "Could not find the target user.")
         return
 
     target_user = await client.get_users(target_user_id)
 
     if target_user_id == bot_user.id:
-        await client.send_message(chat_id, "I'm not going to warn myself.")
         return
 
     target_user_member = await client.get_chat_member(chat_id, target_user_id)
     if target_user_member.status == ChatMemberStatus.ADMINISTRATOR:
-        await client.send_message(chat_id, "You cannot warn an admin.")
         return
 
     reason = " ".join(message.command[2:]) if len(message.command) > 2 else "No reason provided."
     warning_count = await update_warnings(target_user_id, chat_id, reason)
 
-    notification_message = await client.send_message(
-        chat_id,
-        f"User {target_user.mention} has {warning_count}/3 warnings; be careful! Reason: {reason}",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("Remove Warn (Admin Only)", callback_data=f"remove_warn:{target_user_id}:{chat_id}")]
-        ])
-    )
-
     if warning_count >= 3:
         try:
             await client.ban_chat_member(chat_id, target_user_id)
-            await client.send_message(chat_id, f"That's 3/3 warnings; User {target_user.mention} is banned!\nReason: {reason}")
+            await client.send_message(chat_id, f"User {target_user.mention} is banned!\nReason: {reason}")
             mongo_collection.delete_one({"user_id": target_user_id, "chat_id": chat_id})
         except Exception as e:
             logger.error(f"Failed to ban user: {str(e)}")
@@ -113,19 +97,9 @@ async def remove_warning(client, query):
         if user_record['warnings'] > 1:
             remaining_warnings = user_record['warnings'] - 1
             mongo_collection.update_one({"user_id": target_user_id, "chat_id": chat_id}, {"$set": {"warnings": remaining_warnings}})
-            await client.edit_message_text(
-                chat_id, 
-                query.message.id,
-                f"Admin {query.from_user.mention} has removed {target_user.mention}'s warning. Remaining warnings: {remaining_warnings}/3."
-            )
             await query.answer(f"Warning removed. User {target_user.mention} now has {remaining_warnings}/3 warnings.", show_alert=False)
         else:
             mongo_collection.delete_one({"user_id": target_user_id, "chat_id": chat_id})
-            await client.edit_message_text(
-                chat_id,
-                query.message.id,
-                f"Admin {query.from_user.mention} has removed {target_user.mention}'s warning. User has no warnings left."
-            )
             await query.answer(f"User {target_user.mention} has no warnings left.", show_alert=False)
     else:
         await query.answer("No warnings to remove for this user.", show_alert=False)
