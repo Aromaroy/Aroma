@@ -53,15 +53,31 @@ async def purge_messages(client, message):
         return
 
     deleted_count = 0
+    replied_msg = message.reply_to_message
 
-    # Fetch chat messages using get_chat_history
-    async for msg in client.get_chat_history(chat_id, limit=100):
-        if msg.from_user and msg.from_user.id == target_user_id:
-            try:
-                await client.delete_messages(chat_id, msg.message_id)
-                deleted_count += 1
-            except Exception as e:
-                logger.error(f"Failed to delete message {msg.message_id}: {e}")
+    if not replied_msg:
+        error_msg = await client.send_message(chat_id, "Reply to the message you want to delete.")
+        await asyncio.sleep(2)
+        await client.delete_messages(chat_id, error_msg.message_id)
+        return
+
+    purge_to = message.message_id
+
+    message_ids = []
+    
+    for message_id in range(replied_msg.message_id, purge_to + 1):
+        message_ids.append(message_id)
+
+        # Max message deletion limit is 100
+        if len(message_ids) == 100:
+            await client.delete_messages(chat_id, message_ids, revoke=True)
+            deleted_count += len(message_ids)
+            message_ids = []
+
+    # Delete if any messages left
+    if len(message_ids) > 0:
+        await client.delete_messages(chat_id, message_ids, revoke=True)
+        deleted_count += len(message_ids)
 
     notification_message = f"{deleted_count} messages deleted."
     sent_message = await client.send_message(chat_id, notification_message)
