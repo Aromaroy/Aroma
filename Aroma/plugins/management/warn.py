@@ -79,15 +79,15 @@ async def warn_user(client, message):
     reason = " ".join(message.command[2:]) if len(message.command) > 2 else "No reason provided."
     warning_count = await update_warnings(target_user_id, chat_id, reason)
 
-    notification_message = await client.send_message(
-        chat_id,
-        f"User {target_user.mention} has {warning_count}/3 warnings; be careful! Reason: {reason}",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("Remove Warn (Admin Only)", callback_data=f"remove_warn:{target_user_id}:{chat_id}")]
-        ])
-    )
-
-    if warning_count >= 3:
+    if warning_count < 3:
+        notification_message = await client.send_message(
+            chat_id,
+            f"User {target_user.mention} has {warning_count}/3 warnings; be careful! Reason: {reason}",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("Remove Warn (Admin Only)", callback_data=f"remove_warn:{target_user_id}:{chat_id}")]
+            ])
+        )
+    elif warning_count == 3:
         try:
             await client.ban_chat_member(chat_id, target_user_id)
             await client.send_message(chat_id, f"That's 3/3 warnings; User {target_user.mention} is banned!\nReason: {reason}")
