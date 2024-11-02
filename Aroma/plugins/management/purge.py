@@ -54,8 +54,8 @@ async def purge_messages(client, message):
 
     deleted_count = 0
 
-    # Use iter_history to retrieve messages
-    async for msg in client.iter_history(chat_id, limit=100):
+    # Fetch chat messages using get_chat_history
+    async for msg in client.get_chat_history(chat_id, limit=100):
         if msg.from_user and msg.from_user.id == target_user_id:
             try:
                 await client.delete_messages(chat_id, msg.message_id)
