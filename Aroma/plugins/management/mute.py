@@ -54,11 +54,19 @@ async def mute_user(client, message):
         await client.send_message(chat_id, "Could not find the target user.")
         return
 
+    if target_user_id == bot_user.id:
+        await client.send_message(chat_id, "I'm not gonna mute myself.")
+        return
+
     target_user_member = await client.get_chat_member(chat_id, target_user_id)
     logger.info(f"Target User ID: {target_user_id}, Status: {target_user_member.status}, Privileges: {target_user_member.privileges}")
 
     if target_user_member.status == ChatMemberStatus.ADMINISTRATOR:
         await client.send_message(chat_id, "You cannot mute an admin.")
+        return
+
+    if target_user_member.status == ChatMemberStatus.LEFT:
+        await client.send_message(chat_id, "This user is not a member of this group.")
         return
 
     try:
@@ -73,7 +81,9 @@ async def mute_user(client, message):
         )
 
         await client.restrict_chat_member(chat_id, target_user_id, permissions=permissions)
-        await client.send_message(chat_id, "User has been muted.")
+        target_user = await client.get_users(target_user_id)
+        target_name = target_user.first_name + (f" {target_user.last_name}" if target_user.last_name else "")
+        await client.send_message(chat_id, f"{target_name} has been muted.")
     except Exception as e:
         await client.send_message(chat_id, f"Failed to mute user: {str(e)}")
         logger.error(f"Failed to mute user: {str(e)}")
