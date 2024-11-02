@@ -1,11 +1,6 @@
-import asyncio
 from pyrogram import filters, Client
 from pyrogram.enums import ParseMode
 from Aroma import app
-
-async def delete_message_after_delay(message, delay):
-    await asyncio.sleep(delay)
-    await message.delete()
 
 @app.on_message(filters.command('id'))
 async def get_id(client: Client, message):
@@ -28,7 +23,6 @@ async def get_id(client: Client, message):
             except Exception:
                 text = "This user doesn't exist."
                 await processing_message.edit(text)
-                await delete_message_after_delay(processing_message, 20)
                 return
 
         text += f"**[Chat ID:](https://t.me/{chat.username})** `{chat.id}`\n\n"
@@ -51,5 +45,3 @@ async def get_id(client: Client, message):
 
     except Exception as e:
         await message.reply(f"Error: {e}")
-
-    await delete_message_after_delay(processing_message, 20)
