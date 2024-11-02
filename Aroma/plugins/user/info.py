@@ -1,7 +1,6 @@
 import logging
 from pyrogram import Client, filters
-from pyrogram.enums import ParseMode, ChatMemberStatus, ChatMembersFilter, ChatType
-from pyrogram.types import ChatPrivileges, ChatPermissions, Message
+from pyrogram.enums import ParseMode, ChatMemberStatus
 from Aroma import app
 
 @app.on_message(filters.command('info'))
@@ -26,12 +25,15 @@ async def get_user_info(client: Client, message):
 
     try:
         user = await client.get_users(user_id)
-        
+
         if chat.type == "private":
             user_status = "Can't check status in DMs."
         else:
             member = await client.get_chat_member(chat.id, user_id)
-            user_status = "Admin" if member.status == "administrator" else "Non-Admin"
+            if member.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.CREATOR]:
+                user_status = "Admin"
+            else:
+                user_status = "Non-Admin"
 
         text = (
             f"**User Info:**\n"
