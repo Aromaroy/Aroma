@@ -77,12 +77,12 @@ async def warn_user(client, message):
     reason = " ".join(message.command[2:]) if len(message.command) > 2 else "No reason provided."
     warning_count = await update_warnings(target_user_id, chat_id, reason)
 
-    notification_message = f"User {target_user_id} has {warning_count}/3 warnings; be careful! Reason: {reason}"
+    notification_message = await client.send_message(chat_id, f"User {target_user_id} has {warning_count}/3 warnings; be careful! Reason: {reason}")
     remove_warn_button = InlineKeyboardMarkup([
-        [InlineKeyboardButton("Remove Warn (Admin Only)", callback_data=f"remove_warn:{target_user_id}:{chat_id}")]
+        [InlineKeyboardButton("Remove Warn (Admin Only)", callback_data=f"remove_warn:{target_user_id}:{chat_id}:{notification_message.message_id}")]
     ])
     
-    await client.send_message(chat_id, notification_message, reply_markup=remove_warn_button)
+    await client.edit_message_reply_markup(chat_id, notification_message.message_id, reply_markup=remove_warn_button)
 
     if warning_count >= 3:
         try:
@@ -94,9 +94,10 @@ async def warn_user(client, message):
 
 @app.on_callback_query(filters.regex(r'^remove_warn:'))
 async def remove_warning(client, query):
-    _, target_user_id, chat_id = query.data.split(':')
+    _, target_user_id, chat_id, message_id = query.data.split(':')
     target_user_id = int(target_user_id)
     chat_id = int(chat_id)
+    message_id = int(message_id)
 
     user_member = await client.get_chat_member(chat_id, query.from_user.id)
     if user_member.status != ChatMemberStatus.ADMINISTRATOR or not user_member.privileges.can_restrict_members:
@@ -107,9 +108,12 @@ async def remove_warning(client, query):
     if user_record:
         if user_record['warnings'] > 1:
             mongo_collection.update_one({"user_id": target_user_id, "chat_id": chat_id}, {"$set": {"warnings": user_record['warnings'] - 1}})
-            await query.answer(f"Warning removed. User {target_user_id} now has {user_record['warnings'] - 1}/3 warnings.", show_alert=False)
+            remaining_warnings = user_record['warnings'] - 1
+            await client.edit_message_text(chat_id, message_id, f"User {target_user_id} has {remaining_warnings}/3 warnings; be careful! Reason: {user_record.get('reason', 'No reason provided.')}")
+            await query.answer(f"Warning removed. User {target_user_id} now has {remaining_warnings}/3 warnings.", show_alert=False)
         else:
             mongo_collection.delete_one({"user_id": target_user_id, "chat_id": chat_id})
+            await client.edit_message_text(chat_id, message_id, f"User {target_user_id} has no warnings left.")
             await query.answer(f"User {target_user_id} has no warnings left.", show_alert=False)
     else:
         await query.answer("No warnings to remove for this user.", show_alert=False)
