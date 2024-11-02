@@ -50,7 +50,7 @@ async def tmute_user(client, message):
             await client.send_message(chat_id, "I am not an admin.")
             return
         if not bot_member.privileges.can_change_info:
-            await client.send_message(chat_id, "I don't have rights to tmute users.")
+            await client.send_message(chat_id, "I don't have rights to mute users.")
             return
     except Exception as e:
         await client.send_message(chat_id, f"Error retrieving bot status: {e}")
@@ -63,7 +63,7 @@ async def tmute_user(client, message):
         return
 
     if not user_member.privileges.can_change_info:
-        await client.send_message(chat_id, "You don't have rights to tmute this user.")
+        await client.send_message(chat_id, "You don't have rights to mute this user.")
         return
 
     target_user_id = await get_target_user_id(client, chat_id, message)
@@ -109,7 +109,17 @@ async def tmute_user(client, message):
 
         await asyncio.sleep(duration)
 
-        await client.restrict_chat_member(chat_id, target_user_id, permissions=None)
+        # Restore permissions to True
+        permissions = ChatPermissions(
+            can_send_messages=True,
+            can_send_media_messages=True,
+            can_send_polls=True,
+            can_send_other_messages=True,
+            can_add_web_page_previews=True,
+            can_pin_messages=True
+        )
+
+        await client.restrict_chat_member(chat_id, target_user_id, permissions=permissions)
         await client.send_message(chat_id, f"{target_name} has been unmuted.")
     except Exception as e:
         await client.send_message(chat_id, f"Failed to mute user: {str(e)}")
