@@ -26,14 +26,12 @@ async def get_user_info(client: Client, message):
     try:
         user = await client.get_users(user_id)
 
+        # Check if the chat is a group or a private chat
         if chat.type == "private":
             user_status = "Can't check status in DMs."
         else:
             member = await client.get_chat_member(chat.id, user_id)
-            if member.status in [ChatMemberStatus.ADMINISTRATOR]:
-                user_status = "Admin"
-            else:
-                user_status = "Non-Admin"
+            user_status = "Admin" if member.status == ChatMemberStatus.ADMINISTRATOR else "Non-Admin"
 
         text = (
             f"**User Info:**\n"
