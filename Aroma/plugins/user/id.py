@@ -28,7 +28,7 @@ async def id_user(client, message):
     try:
         target_user = await client.get_users(target_user_id)
         target_name = target_user.first_name + (f" {target_user.last_name}" if target_user.last_name else "")
-        await client.send_message(chat_id, f"The ID of {target_name} is {target_user_id}.")
+        await client.send_message(chat_id, f"The ID of `{target_name}` is `{target_user_id}`.")
     except Exception as e:
         await client.send_message(chat_id, f"Failed to retrieve user ID: {str(e)}")
         logger.error(f"Failed to retrieve user ID: {str(e)}")
