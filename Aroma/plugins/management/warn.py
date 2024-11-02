@@ -102,8 +102,12 @@ async def remove_warning(client, query):
     chat_id = int(chat_id)
 
     user_member = await client.get_chat_member(chat_id, query.from_user.id)
-    if user_member.status != ChatMemberStatus.ADMINISTRATOR or not user_member.privileges.can_restrict_members:
-        await query.answer("You don't have rights.", show_alert=True)
+    if user_member.status != ChatMemberStatus.ADMINISTRATOR:
+        await query.answer("You are not an admin and cannot remove warnings.", show_alert=True)
+        return
+
+    if not user_member.privileges.can_restrict_members:
+        await query.answer("You are an admin but lack the permission to remove warnings.", show_alert=True)
         return
 
     user_record = mongo_collection.find_one({"user_id": target_user_id, "chat_id": chat_id})
