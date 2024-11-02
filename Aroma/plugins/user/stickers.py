@@ -34,7 +34,7 @@ async def create_stickers(client, message: Message):
 
     created_stickers = []
     for reply_text in replies:
-        sticker = await create_sticker_from_text(reply_text)
+        sticker = await create_sticker_from_text(message, reply_text)  # Pass message here
         user_sticker_requests[user_id].append(sticker)
         created_stickers.append(sticker)
 
@@ -58,7 +58,7 @@ async def process_stickers(client, message: Message):
 
     await message.reply("Your stickers have been sent!")
 
-async def create_sticker_from_text(text):
+async def create_sticker_from_text(message, text):
     img_path = await generate_image_from_text(text)
     with open(img_path, 'rb') as img:
         sticker = await app.send_sticker(chat_id=message.chat.id, sticker=img)  # Send to the same chat
