@@ -63,7 +63,11 @@ async def ban_user(client, message):
 
     try:
         await client.ban_chat_member(chat_id, target_user_id)
-        await client.send_message(chat_id, "User has been banned.")
+        # Notify the chat about the ban
+        target_name = target_user_member.user.first_name + (" " + target_user_member.user.last_name if target_user_member.user.last_name else "")
+        admin_name = message.from_user.first_name + (" " + message.from_user.last_name if message.from_user.last_name else "")
+        notification_message = f"A user has been banned in chat:\nUser: {target_name}\nBanned by: {admin_name}"
+        await client.send_message(chat_id, notification_message)
     except Exception as e:
         await client.send_message(chat_id, f"Failed to ban user: {str(e)}")
         logger.error(f"Failed to ban user: {str(e)}")
