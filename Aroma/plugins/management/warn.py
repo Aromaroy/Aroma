@@ -125,5 +125,3 @@ async def remove_warning(client, query):
             await query.answer(f"User {target_user_id} has no warnings left.", show_alert=False)
     else:
         await query.answer("No warnings to remove for this user.", show_alert=False)
-
-    await client.send_message(chat_id, f"Admin {query.from_user.mention} has removed {target_user_id}'s warning. Remaining warnings: {user_record['warnings'] - 1}/3.")
