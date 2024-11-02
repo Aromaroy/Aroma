@@ -70,7 +70,7 @@ async def kick_user(client, message):
 
     try:
         chat = await client.get_chat(chat_id)
-        await chat.kick_chat_member(target_user_id)
+        await chat.ban_chat_member(target_user_id)
         await asyncio.sleep(1)
         await chat.unban_chat_member(target_user_id)
 
