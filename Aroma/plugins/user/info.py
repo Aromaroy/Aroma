@@ -26,7 +26,6 @@ async def get_user_info(client: Client, message):
     try:
         user = await client.get_users(user_id)
 
-        # Prepare the user info text
         text = (
             f"**User Info:**\n"
             f"ID: `{user.id}`\n"
@@ -37,8 +36,7 @@ async def get_user_info(client: Client, message):
             f"Premium: {'Yes' if user.is_premium else 'No'}\n"
         )
 
-        # Only check member status if in a group chat
-        if chat.type in ["supergroup", "group"]:
+        if chat.id != client.me.id:
             try:
                 member = await client.get_chat_member(chat.id, user_id)
                 user_status = "Admin" if member.status == ChatMemberStatus.ADMINISTRATOR else "Non-Admin"
