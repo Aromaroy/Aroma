@@ -34,7 +34,7 @@ async def create_stickers(client, message: Message):
 
     created_stickers = []
     for reply_text in replies:
-        sticker = await create_sticker_from_text(message, reply_text)  # Pass message here
+        sticker = await create_sticker_from_text(message, reply_text)
         user_sticker_requests[user_id].append(sticker)
         created_stickers.append(sticker)
 
@@ -59,16 +59,36 @@ async def process_stickers(client, message: Message):
     await message.reply("Your stickers have been sent!")
 
 async def create_sticker_from_text(message, text):
-    img_path = await generate_image_from_text(text)
+    user = message.from_user
+    profile_photo = await get_profile_photo(user.id)
+    img_path = await generate_image_from_text(user.first_name, profile_photo, text)
     with open(img_path, 'rb') as img:
-        sticker = await app.send_sticker(chat_id=message.chat.id, sticker=img)  # Send to the same chat
+        sticker = await app.send_sticker(chat_id=message.chat.id, sticker=img)
     return sticker.sticker.file_id
 
-async def generate_image_from_text(text):
+async def get_profile_photo(user_id):
+    user = await app.get_users(user_id)
+    if user.photo:
+        return user.photo.big_file_id
+    return None
+
+async def generate_image_from_text(full_name, profile_photo, message_text):
     img = Image.new('RGBA', (512, 512), color=(255, 255, 255, 0))  # Transparent background
-    d = ImageDraw.Draw(img)
+    draw = ImageDraw.Draw(img)
+    
+    # Load default font
     font = ImageFont.load_default()
-    d.text((10, 10), text, fill=(0, 0, 0), font=font)
+    
+    # Draw the profile picture if it exists
+    if profile_photo:
+        profile_img = await app.download_media(profile_photo)
+        profile_image = Image.open(profile_img).resize((50, 50))
+        img.paste(profile_image, (10, 10))  # Position the profile picture
+    
+    # Draw "User Name" and message text
+    draw.text((70, 10), f"User Name: {full_name}", fill=(0, 0, 0), font=font)  # Draw "User Name"
+    draw.text((10, 70), message_text, fill=(0, 0, 0), font=font)  # Draw message text
+
     img_path = "temp_sticker.webp"
     img.save(img_path, format='WEBP')  # Save as WebP
     return img_path
