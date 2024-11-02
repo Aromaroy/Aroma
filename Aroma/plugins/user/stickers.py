@@ -13,7 +13,7 @@ user_sticker_requests = {}
 async def create_stickers(client, message: Message):
     user_id = message.from_user.id
     command = message.command[0]
-    
+
     if user_id not in user_sticker_requests:
         user_sticker_requests[user_id] = []
 
@@ -31,9 +31,15 @@ async def create_stickers(client, message: Message):
             replies.append(message.reply_to_message.reply_to_message.text)
             replies.append(message.reply_to_message.reply_to_message.reply_to_message.text)
 
+    created_stickers = []
     for reply_text in replies:
         sticker = await create_sticker_from_text(reply_text)
         user_sticker_requests[user_id].append(sticker)
+        created_stickers.append(sticker)  # Collect created stickers for sending
+
+    # Send the created stickers as replies
+    for sticker in created_stickers:
+        await message.reply_sticker(sticker)  # Assuming sticker is the ID of the sticker
 
     await message.reply(f"{len(replies)} sticker(s) created!")
 
@@ -52,14 +58,16 @@ async def process_stickers(client, message: Message):
     notification_message = "Your Sticker Pack has been created!"
     keyboard = [[InlineKeyboardButton("Save Sticker Pack", callback_data="save_sticker_pack")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    
+
     await client.send_message(message.chat.id, notification_message, reply_markup=reply_markup)
 
 async def create_sticker_from_text(text):
-    return "sticker_id"
+    # This function should return the ID of the created sticker
+    return "sticker_id"  # Replace with actual sticker creation logic
 
 async def create_sticker_pack(stickers):
-    return "sticker_pack_id"
+    # This function should create a sticker pack and return its ID
+    return "sticker_pack_id"  # Replace with actual sticker pack creation logic
 
 @app.on_callback_query(filters.regex("save_sticker_pack"))
 async def save_sticker_pack(client, callback_query):
