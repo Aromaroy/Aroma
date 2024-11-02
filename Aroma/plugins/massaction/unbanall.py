@@ -40,7 +40,7 @@ async def unban_all_users(client, message):
         return
 
     try:
-        banned_users = await client.get_banned_chat_members(chat_id)
+        banned_users = await client.get_chat_members(chat_id, filter=ChatMembersFilter.BANNED)
         total_unbanned = 0
 
         for banned_user in banned_users:
