@@ -1,6 +1,7 @@
 import logging
 from pyrogram import Client, filters
-from pyrogram.enums import ChatMemberStatus
+from pyrogram.enums import ChatMemberStatus, ChatMembersFilter, ChatType
+from pyrogram.types import ChatPrivileges, ChatPermissions, Message
 from Aroma import app
 
 logging.basicConfig(level=logging.INFO)
