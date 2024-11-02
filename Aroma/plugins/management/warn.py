@@ -71,7 +71,16 @@ async def warn_user(client, message):
         await client.send_message(chat_id, "I'm not going to warn myself.")
         return
 
-    target_user_member = await client.get_chat_member(chat_id, target_user_id)
+    try:
+        target_user_member = await client.get_chat_member(chat_id, target_user_id)
+    except Exception as e:
+        if "USER_NOT_PARTICIPANT" in str(e):
+            await client.send_message(chat_id, f"User {target_user.mention} is not a member of this group.")
+            return
+        logger.error(f"Error retrieving target user status: {e}")
+        await client.send_message(chat_id, "An error occurred while checking the target user's status.")
+        return
+
     if target_user_member.status == ChatMemberStatus.ADMINISTRATOR:
         await client.send_message(chat_id, "You cannot warn an admin.")
         return
