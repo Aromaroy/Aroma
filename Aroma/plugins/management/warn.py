@@ -4,7 +4,7 @@ from pyrogram import Client, filters
 from pyrogram.enums import ChatMemberStatus
 from config import MONGO_DB_URI
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from Aroma import app
+from aroma import app
 
 mongo_client = MongoClient(MONGO_DB_URI)
 mongo_db = mongo_client["warn"]
