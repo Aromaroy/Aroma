@@ -4,6 +4,7 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 from PIL import Image, ImageDraw, ImageFont
 from Aroma import app
+import textwrap
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -60,25 +61,36 @@ async def process_stickers(client, message: Message):
 
 async def create_sticker_from_text(message, text):
     user = message.from_user
-    full_name = f"{user.first_name} {user.last_name or ''}".strip()  # Handle potential missing last name
-    formatted_text = f"{full_name}:\n{text}"  # Format the text as in the chat
+    full_name = f"{user.first_name} {user.last_name or ''}".strip()
+    formatted_text = f"{full_name}:\n{text}"
     img_path = await generate_image_from_text(formatted_text)
     with open(img_path, 'rb') as img:
         sticker = await app.send_sticker(chat_id=message.chat.id, sticker=img)
     return sticker.sticker.file_id
 
 async def generate_image_from_text(formatted_text):
-    img = Image.new('RGBA', (512, 512), color=(255, 255, 255, 0))  # Transparent background
+    try:
+        font = ImageFont.truetype("path/to/your/font.ttf", size=24)
+    except IOError:
+        font = ImageFont.load_default()
+
+    img = Image.new('RGBA', (512, 512), color=(255, 255, 255, 0))
     draw = ImageDraw.Draw(img)
-    
-    # Load default font
-    font = ImageFont.load_default()
-    
-    # Draw the formatted text
-    draw.text((10, 10), formatted_text, fill=(0, 0, 0), font=font)  # Draw the message text
+
+    text_width, text_height = draw.textsize(formatted_text, font=font)
+    bubble_padding = 10
+    bubble_width = text_width + bubble_padding * 2
+    bubble_height = text_height + bubble_padding * 2
+
+    draw.rectangle([(10, 10), (10 + bubble_width, 10 + bubble_height)],
+                   fill=(255, 255, 255, 255),
+                   outline=(200, 200, 200))
+
+    wrapped_text = textwrap.fill(formatted_text, width=30)
+    draw.text((10 + bubble_padding, 10 + bubble_padding), wrapped_text, fill=(0, 0, 0), font=font)
 
     img_path = "temp_sticker.webp"
-    img.save(img_path, format='WEBP')  # Save as WebP
+    img.save(img_path, format='WEBP')
     return img_path
 
 @app.on_callback_query(filters.regex("save_sticker_pack"))
