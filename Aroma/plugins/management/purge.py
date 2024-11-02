@@ -55,12 +55,13 @@ async def purge_messages(client, message):
         await client.delete_messages(chat_id, error_msg.id)
         return
 
-    count_to_delete = 10  # Number of messages to delete
     deleted_count = 0
     message_ids = []
+    limit = 100  # Set a limit for how many messages to delete
 
-    async for msg in client.get_chat_history(chat_id, limit=count_to_delete, offset_id=replied_msg.id):
-        message_ids.append(msg.id)
+    async for msg in client.get_chat_history(chat_id, from_message_id=replied_msg.id, limit=limit):
+        if msg.id < replied_msg.id:  # Only consider messages below the replied message
+            message_ids.append(msg.id)
 
     if message_ids:
         await client.delete_messages(chat_id, message_ids, revoke=True)
