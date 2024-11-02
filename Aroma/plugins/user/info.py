@@ -38,10 +38,14 @@ async def get_user_info(client: Client, message):
         )
 
         # Only check member status if in a group chat
-        if chat.type == "supergroup" or chat.type == "group":
-            member = await client.get_chat_member(chat.id, user_id)
-            user_status = "Admin" if member.status == ChatMemberStatus.ADMINISTRATOR else "Non-Admin"
-            text = text.replace("DC ID: ", f"Status: {user_status}\nDC ID: ")
+        if chat.type in ["supergroup", "group"]:
+            try:
+                member = await client.get_chat_member(chat.id, user_id)
+                user_status = "Admin" if member.status == ChatMemberStatus.ADMINISTRATOR else "Non-Admin"
+                text = text.replace("DC ID: ", f"Status: {user_status}\nDC ID: ")
+            except Exception as e:
+                logging.error(f"Failed to get member status: {e}")
+                text = text.replace("DC ID: ", f"Status: Unknown\nDC ID: ")
 
         await message.reply(
             text,
