@@ -37,7 +37,7 @@ async def get_user_info(client: Client, message):
             f"Premium: {'Yes' if user.is_premium else 'No'}\n"
         )
 
-        # Add status only if in a group chat
+        # Only check member status if in a group chat
         if chat.type != "private":
             member = await client.get_chat_member(chat.id, user_id)
             user_status = "Admin" if member.status == ChatMemberStatus.ADMINISTRATOR else "Non-Admin"
