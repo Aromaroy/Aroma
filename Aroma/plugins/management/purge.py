@@ -1,12 +1,11 @@
 import asyncio
 import logging
 from pyrogram import Client, filters
-from pyrogram.enums import ChatMemberStatus, ChatMembersFilter, ChatType
-from pyrogram.types import ChatPrivileges, ChatPermissions, Message
+from pyrogram.enums import ChatMemberStatus
 from Aroma import app
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(name)
 
 async def get_target_user_id(client, chat_id, message):
     if message.reply_to_message:
@@ -54,8 +53,10 @@ async def purge_messages(client, message):
     deleted_count = 0
     message_ids = []
 
-    # Fetch messages using get_chat
-    async for msg in client.get_chat(chat_id).iter_messages(limit=100):
+    # Await the get_chat call
+    chat = await client.get_chat(chat_id)
+
+    async for msg in chat.iter_messages(limit=100):
         if msg.id > replied_msg.id:
             message_ids.append(msg.id)
             if len(message_ids) == 100:
