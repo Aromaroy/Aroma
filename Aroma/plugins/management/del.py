@@ -39,7 +39,6 @@ async def delete_message(client, message):
     message_to_delete = message.reply_to_message
     if message_to_delete:
         await client.delete_messages(chat_id, message_to_delete.id)
-        await client.delete_messages(chat_id, message.id)  # Delete the command message
-        await message.reply("Message deleted.")
+        await client.delete_messages(chat_id, message.id)
     else:
         await message.reply("Please reply to a message to delete it.")
