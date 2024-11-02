@@ -90,7 +90,13 @@ async def warn_user(client, message):
     elif warning_count == 3:
         try:
             await client.ban_chat_member(chat_id, target_user_id)
-            await client.send_message(chat_id, f"That's 3/3 warnings; User {target_user.mention} is banned!\nReason: {reason}")
+            notification_message = await client.send_message(
+                chat_id,
+                f"That's 3/3 warnings; User {target_user.mention} is banned!\nReason: {reason}",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("Unban [Admin Only]", callback_data=f"unban:{target_user_id}:{chat_id}")]
+                ])
+            )
             mongo_collection.delete_one({"user_id": target_user_id, "chat_id": chat_id})
         except Exception as e:
             logger.error(f"Failed to ban user: {str(e)}")
@@ -133,3 +139,25 @@ async def remove_warning(client, query):
             await query.answer(f"User {target_user.mention} has no warnings left.", show_alert=False)
     else:
         await query.answer("No warnings to remove for this user.", show_alert=False)
+
+@app.on_callback_query(filters.regex(r'^unban:'))
+async def unban_user(client, query):
+    _, target_user_id, chat_id = query.data.split(':')
+    target_user_id = int(target_user_id)
+    chat_id = int(chat_id)
+
+    user_member = await client.get_chat_member(chat_id, query.from_user.id)
+    if user_member.status != ChatMemberStatus.ADMINISTRATOR:
+        await query.answer("You are not an admin.", show_alert=True)
+        return
+
+    if not user_member.privileges.can_restrict_members:
+        await query.answer("You are an admin but can't unban.", show_alert=True)
+        return
+
+    try:
+        await client.unban_chat_member(chat_id, target_user_id)
+        await query.answer(f"User {target_user_id} has been unbanned.", show_alert=False)
+    except Exception as e:
+        logger.error(f"Failed to unban user: {str(e)}")
+        await query.answer("Failed to unban the user. Please try again later.", show_alert=True)
