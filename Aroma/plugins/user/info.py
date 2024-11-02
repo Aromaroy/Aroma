@@ -30,7 +30,7 @@ async def get_user_info(client: Client, message):
             user_status = "Can't check status in DMs."
         else:
             member = await client.get_chat_member(chat.id, user_id)
-            if member.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.CREATOR]:
+            if member.status in [ChatMemberStatus.ADMINISTRATOR]:
                 user_status = "Admin"
             else:
                 user_status = "Non-Admin"
