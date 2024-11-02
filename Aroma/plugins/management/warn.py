@@ -157,7 +157,9 @@ async def unban_user(client, query):
 
     try:
         await client.unban_chat_member(chat_id, target_user_id)
-        await query.answer(f"User {target_user_id} has been unbanned.", show_alert=False)
+        target_user = await client.get_users(target_user_id)
+        await query.answer(f"User {target_user.mention} has been unbanned.", show_alert=True)
+        await client.delete_messages(chat_id, query.message.id)
     except Exception as e:
         logger.error(f"Failed to unban user: {str(e)}")
         await query.answer("Failed to unban the user. Please try again later.", show_alert=True)
