@@ -10,8 +10,6 @@ async def get_id(client: Client, message):
     reply = message.reply_to_message
 
     try:
-        processing_message = await message.reply("Fetching IDs...")
-
         text = f"**[Message ID:]({message.link})** `{message_id}`\n"
         text += f"**[Your ID:](tg://user?id={your_id})** `{your_id}`\n"
 
@@ -22,7 +20,7 @@ async def get_id(client: Client, message):
                 text += f"**[User ID:](tg://user?id={user_id})** `{user_id}`\n"
             except Exception:
                 text = "This user doesn't exist."
-                await processing_message.edit(text)
+                await message.reply(text)
                 return
 
         text += f"**[Chat ID:](https://t.me/{chat.username})** `{chat.id}`\n\n"
