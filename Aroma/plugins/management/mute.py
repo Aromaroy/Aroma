@@ -58,19 +58,7 @@ async def mute_user(client, message):
         await client.send_message(chat_id, "I'm not gonna mute myself.")
         return
 
-    target_user_member = await client.get_chat_member(chat_id, target_user_id)
-    logger.info(f"Target User ID: {target_user_id}, Status: {target_user_member.status}, Privileges: {target_user_member.privileges}")
-
-    if target_user_member.status == ChatMemberStatus.ADMINISTRATOR:
-        await client.send_message(chat_id, "You cannot mute an admin.")
-        return
-
-    if target_user_member.status == ChatMemberStatus.LEFT:
-        await client.send_message(chat_id, "This user is not a member of this group.")
-        return
-
     try:
-        # Create ChatPermissions instance to revoke specific permissions
         permissions = ChatPermissions(
             can_send_messages=False,
             can_send_media_messages=False,
