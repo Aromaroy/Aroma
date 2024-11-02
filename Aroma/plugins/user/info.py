@@ -26,23 +26,22 @@ async def get_user_info(client: Client, message):
     try:
         user = await client.get_users(user_id)
 
-        # Check if the chat is a group or a private chat
-        if chat.type == "private":
-            user_status = "Can't check status in DMs."
-        else:
-            member = await client.get_chat_member(chat.id, user_id)
-            user_status = "Admin" if member.status == ChatMemberStatus.ADMINISTRATOR else "Non-Admin"
-
+        # Prepare the user info text
         text = (
             f"**User Info:**\n"
             f"ID: `{user.id}`\n"
             f"Name: {user.first_name or 'No name'}\n"
             f"Username: @{user.username if user.username else 'No username'}\n"
             f"User link: [link](tg://user?id={user.id})\n"
-            f"Status: {user_status}\n"
             f"DC ID: `{user.dc_id}`\n"
-            f"Premium: {'Yes' if user.is_premium else 'No'}\n\n"
+            f"Premium: {'Yes' if user.is_premium else 'No'}\n"
         )
+
+        # Add status only if in a group chat
+        if chat.type != "private":
+            member = await client.get_chat_member(chat.id, user_id)
+            user_status = "Admin" if member.status == ChatMemberStatus.ADMINISTRATOR else "Non-Admin"
+            text = text.replace("DC ID: ", f"Status: {user_status}\nDC ID: ")
 
         await message.reply(
             text,
