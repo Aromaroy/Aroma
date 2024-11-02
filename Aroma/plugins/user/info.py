@@ -38,7 +38,7 @@ async def get_user_info(client: Client, message):
         )
 
         # Only check member status if in a group chat
-        if chat.type != "private":
+        if chat.type == "supergroup" or chat.type == "group":
             member = await client.get_chat_member(chat.id, user_id)
             user_status = "Admin" if member.status == ChatMemberStatus.ADMINISTRATOR else "Non-Admin"
             text = text.replace("DC ID: ", f"Status: {user_status}\nDC ID: ")
