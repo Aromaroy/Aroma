@@ -1,11 +1,12 @@
 import asyncio
 import logging
 from pyrogram import Client, filters
-from pyrogram.enums import ChatMemberStatus
+from pyrogram.enums import ChatMemberStatus, ChatMembersFilter, ChatType
+from pyrogram.types import ChatPrivileges, ChatPermissions, Message
 from Aroma import app
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(name)
+logger = logging.getLogger(__name__)
 
 async def get_target_user_id(client, chat_id, message):
     if message.reply_to_message:
