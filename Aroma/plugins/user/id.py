@@ -1,6 +1,5 @@
 import logging
 from pyrogram import Client, filters
-from pyrogram.errors import UserNotFound
 from Aroma import app
 
 logging.basicConfig(level=logging.INFO)
@@ -9,13 +8,10 @@ logger = logging.getLogger(__name__)
 async def get_target_user_id(client, message):
     if message.reply_to_message:
         return message.reply_to_message.from_user.id
-    elif len(message.command) > 1:
-        target_username = message.command[1].lstrip('@')  # Remove '@' if present
-        try:
-            user = await client.get_users(target_username)
-            return user.id
-        except UserNotFound:
-            return None
+    elif message.command[1:]:
+        target_username = message.command[1]
+        user = await client.get_users(target_username)
+        return user.id
     else:
         return None
 
@@ -26,7 +22,7 @@ async def id_user(client, message):
 
     target_user_id = await get_target_user_id(client, message)
     if target_user_id is None:
-        await client.send_message(chat_id, "Could not find the target user. Please check the username or reply to a message.")
+        await client.send_message(chat_id, "Could not find the target user.")
         return
 
     try:
