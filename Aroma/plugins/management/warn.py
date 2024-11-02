@@ -77,8 +77,12 @@ async def warn_user(client, message):
     reason = " ".join(message.command[2:]) if len(message.command) > 2 else "No reason provided."
     warning_count = await update_warnings(target_user_id, chat_id, reason)
 
-    notification_message = f"User {target_user_id} has {warning_count}/3 warnings; be careful!\nReason: {reason}"
-    await client.send_message(chat_id, notification_message)
+    notification_message = f"User {target_user_id} has {warning_count}/3 warnings; be careful! Reason: {reason}"
+    remove_warn_button = InlineKeyboardMarkup([
+        [InlineKeyboardButton("Remove Warn (Admin Only)", callback_data=f"remove_warn:{target_user_id}:{chat_id}")]
+    ])
+    
+    await client.send_message(chat_id, notification_message, reply_markup=remove_warn_button)
 
     if warning_count >= 3:
         try:
@@ -87,11 +91,6 @@ async def warn_user(client, message):
             mongo_collection.delete_one({"user_id": target_user_id, "chat_id": chat_id})
         except Exception as e:
             logger.error(f"Failed to ban user: {str(e)}")
-
-    remove_warn_button = InlineKeyboardMarkup([
-        [InlineKeyboardButton("Remove Warn (Admin Only)", callback_data=f"remove_warn:{target_user_id}:{chat_id}")]
-    ])
-    await client.send_message(chat_id, "Warning issued. Admins can remove this warning if needed.", reply_markup=remove_warn_button)
 
 @app.on_callback_query(filters.regex(r'^remove_warn:'))
 async def remove_warning(client, query):
@@ -115,5 +114,4 @@ async def remove_warning(client, query):
     else:
         await query.answer("No warnings to remove for this user.", show_alert=False)
 
-    # Notify the chat about the removal
     await client.send_message(chat_id, f"Admin {query.from_user.mention} has removed {target_user_id}'s warning. Remaining warnings: {user_record['warnings'] - 1}/3.")
