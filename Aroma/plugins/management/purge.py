@@ -2,7 +2,7 @@ import asyncio
 import logging
 from pyrogram import Client, filters
 from pyrogram.enums import ChatMemberStatus
-from Aroma import app
+from aroma import app
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
