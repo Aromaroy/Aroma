@@ -1,7 +1,6 @@
 import logging
 from pyrogram import Client, filters
-from pyrogram.enums import ChatMemberStatus, ChatMembersFilter, ChatType
-from pyrogram.types import ChatPrivileges, ChatPermissions, Message
+from pyrogram.enums import ChatMemberStatus, ChatMembersFilter
 from Aroma import app
 
 logging.basicConfig(level=logging.INFO)
@@ -41,7 +40,7 @@ async def unban_all_users(client, message):
 
     # Notify about unbanning process
     status_message = await client.send_message(chat_id, "Unbanning all users...")
-    
+
     try:
         banned_users = client.get_chat_members(chat_id, filter=ChatMembersFilter.BANNED)
         total_unbanned = 0
@@ -55,7 +54,7 @@ async def unban_all_users(client, message):
                 logger.error(f"Failed to unban user {banned_user.user.id}: {str(e)}")
 
         # Delete the status message
-        await client.delete_messages(chat_id, status_message.message_id)
+        await client.delete_messages(chat_id, status_message.id)
 
         # Send the final results
         if total_unbanned > 0:
