@@ -1,12 +1,11 @@
 import logging
 from pyrogram import Client, filters
 from pyrogram.enums import ChatMemberStatus
-from pyrogram.types import Message
 import asyncio
 from Aroma import app
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(name)
 
 async def get_target_user_id(client, chat_id, message):
     if message.reply_to_message:
@@ -55,6 +54,7 @@ async def purge_messages(client, message):
 
     deleted_count = 0
 
+    # Instead of get_chat_history, use get_chat_history with pagination
     async for msg in client.get_chat_history(chat_id, limit=100):
         if msg.from_user and msg.from_user.id == target_user_id:
             try:
