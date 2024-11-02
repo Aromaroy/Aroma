@@ -120,7 +120,7 @@ async def tmute_user(client, message):
         )
 
         await client.restrict_chat_member(chat_id, target_user_id, permissions=permissions)
-        await client.send_message(chat_id, f"{target_name} has been unmuted.")
+        await client.send_message(chat_id, f"{target_name} has been unmuted after {duration_str}.")
     except Exception as e:
         await client.send_message(chat_id, f"Failed to mute user: {str(e)}")
         logger.error(f"Failed to mute user: {str(e)}")
