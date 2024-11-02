@@ -69,10 +69,9 @@ async def kick_user(client, message):
         logger.info(f"Target User ID: {target_user_id} is not in the group or does not exist.")
 
     try:
-        chat = await client.get_chat(chat_id)
-        await chat.ban_chat_member(target_user_id)
+        await client.ban_chat_member(chat_id, target_user_id)  # Correctly call ban_chat_member
         await asyncio.sleep(1)
-        await chat.unban_chat_member(target_user_id)
+        await client.unban_chat_member(chat_id, target_user_id)
 
         target_user = await client.get_users(target_user_id)
         target_name = target_user.first_name + (" " + target_user.last_name if target_user.last_name else "")
