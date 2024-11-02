@@ -1,8 +1,7 @@
 import asyncio
 import logging
 from pyrogram import Client, filters
-from pyrogram.enums import ChatMemberStatus, ChatMembersFilter, ChatType
-from pyrogram.types import ChatPrivileges, ChatPermissions, Message
+from pyrogram.enums import ChatMemberStatus
 from Aroma import app
 
 logging.basicConfig(level=logging.INFO)
@@ -59,23 +58,20 @@ async def purge_messages(client, message):
     if not replied_msg:
         error_msg = await client.send_message(chat_id, "Reply to the message you want to delete.")
         await asyncio.sleep(2)
-        await client.delete_messages(chat_id, error_msg.message_id)
+        await client.delete_messages(chat_id, error_msg.id)
         return
 
-    purge_to = message.reply_to_message.id
-
+    purge_to = replied_msg.id
     message_ids = []
 
-    for message_id in range(replied_msg.message_id, purge_to + 1):
+    for message_id in range(replied_msg.id, purge_to + 1):
         message_ids.append(message_id)
 
-        # Max message deletion limit is 100
         if len(message_ids) == 100:
             await client.delete_messages(chat_id, message_ids, revoke=True)
             deleted_count += len(message_ids)
             message_ids = []
 
-    # Delete if any messages left
     if len(message_ids) > 0:
         await client.delete_messages(chat_id, message_ids, revoke=True)
         deleted_count += len(message_ids)
@@ -83,6 +79,5 @@ async def purge_messages(client, message):
     notification_message = f"{deleted_count} messages deleted."
     sent_message = await client.send_message(chat_id, notification_message)
 
-    # Wait for 4 seconds before deleting the notification
     await asyncio.sleep(4)
-    await client.delete_messages(chat_id, sent_message.message_id)
+    await client.delete_messages(chat_id, sent_message.id)
