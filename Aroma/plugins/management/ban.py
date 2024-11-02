@@ -1,7 +1,6 @@
 import logging
 from pyrogram import Client, filters
-from pyrogram.enums import ChatMemberStatus, ChatMembersFilter, ChatType
-from pyrogram.types import ChatPrivileges, ChatPermissions, Message
+from pyrogram.enums import ChatMemberStatus
 from Aroma import app
 
 logging.basicConfig(level=logging.INFO)
@@ -52,6 +51,10 @@ async def ban_user(client, message):
     target_user_id = await get_target_user_id(client, chat_id, message)
     if target_user_id is None:
         await client.send_message(chat_id, "Could not find the target user.")
+        return
+
+    if target_user_id == bot_user.id:
+        await client.send_message(chat_id, "Seriously, I'm not gonna ban myself.")
         return
 
     try:
