@@ -59,6 +59,12 @@ async def mute_user(client, message):
         return
 
     try:
+        target_user_member = await client.get_chat_member(chat_id, target_user_id)
+
+        if target_user_member.status == ChatMemberStatus.ADMINISTRATOR:
+            await client.send_message(chat_id, "You cannot mute an admin.")
+            return
+
         permissions = ChatPermissions(
             can_send_messages=False,
             can_send_media_messages=False,
