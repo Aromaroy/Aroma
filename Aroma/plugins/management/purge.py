@@ -1,7 +1,7 @@
+import asyncio
 import logging
 from pyrogram import Client, filters
-from pyrogram.enums import ChatMemberStatus, ChatMembersFilter, ChatType
-from pyrogram.types import ChatPrivileges, ChatPermissions, Message
+from pyrogram.enums import ChatMemberStatus
 from Aroma import app
 
 logging.basicConfig(level=logging.INFO)
@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 async def get_target_user_id(client, chat_id, message):
     if message.reply_to_message:
         return message.reply_to_message.from_user.id
-    elif message.command[1:]:
+    elif len(message.command) > 1:
         target_username = message.command[1]
         user = await client.get_users(target_username)
         return user.id
@@ -53,15 +53,22 @@ async def purge_messages(client, message):
         return
 
     deleted_count = 0
+    offset_id = 0
 
-    # Instead of get_chat_history, use get_chat_history with pagination
-    async for msg in client.get_chat_history(chat_id, limit=100):
-        if msg.from_user and msg.from_user.id == target_user_id:
-            try:
-                await client.delete_messages(chat_id, msg.message_id)
-                deleted_count += 1
-            except Exception as e:
-                logger.error(f"Failed to delete message {msg.message_id}: {e}")
+    while True:
+        messages = await client.get_chat_history(chat_id, offset_id=offset_id, limit=100)
+        if not messages:
+            break
+
+        for msg in messages:
+            if msg.from_user and msg.from_user.id == target_user_id:
+                try:
+                    await client.delete_messages(chat_id, msg.message_id)
+                    deleted_count += 1
+                except Exception as e:
+                    logger.error(f"Failed to delete message {msg.message_id}: {e}")
+
+        offset_id = messages[-1].message_id  # Update the offset for pagination
 
     notification_message = f"{deleted_count} messages deleted."
     sent_message = await client.send_message(chat_id, notification_message)
