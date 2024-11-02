@@ -45,9 +45,24 @@ async def unmute_user(client, message):
         await client.send_message(chat_id, "You are not an admin.")
         return
 
+    if not user_member.privileges.can_change_info:
+        await client.send_message(chat_id, "You don't have rights to unmute this user.")
+        return
+
     target_user_id = await get_target_user_id(client, chat_id, message)
     if target_user_id is None:
         await client.send_message(chat_id, "Could not find the target user.")
+        return
+
+    target_user_member = await client.get_chat_member(chat_id, target_user_id)
+    logger.info(f"Target User ID: {target_user_id}, Status: {target_user_member.status}, Privileges: {target_user_member.privileges}")
+
+    if target_user_member.status == ChatMemberStatus.ADMINISTRATOR:
+        await client.send_message(chat_id, "You cannot unmute an admin.")
+        return
+
+    if target_user_member.status == ChatMemberStatus.LEFT:
+        await client.send_message(chat_id, "This user is not a member of this group.")
         return
 
     try:
