@@ -65,6 +65,8 @@ async def warn_user(client, message):
         await client.send_message(chat_id, "Could not find the target user.")
         return
 
+    target_user = await client.get_users(target_user_id)
+
     if target_user_id == bot_user.id:
         await client.send_message(chat_id, "I'm not going to warn myself.")
         return
@@ -79,7 +81,7 @@ async def warn_user(client, message):
 
     notification_message = await client.send_message(
         chat_id,
-        f"User {target_user_id} has {warning_count}/3 warnings; be careful! Reason: {reason}",
+        f"User {target_user.mention} has {warning_count}/3 warnings; be careful! Reason: {reason}",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("Remove Warn (Admin Only)", callback_data=f"remove_warn:{target_user_id}:{chat_id}")]
         ])
@@ -88,7 +90,7 @@ async def warn_user(client, message):
     if warning_count >= 3:
         try:
             await client.ban_chat_member(chat_id, target_user_id)
-            await client.send_message(chat_id, f"That's 3/3 warnings; User {target_user_id} is banned!\nReason: {reason}")
+            await client.send_message(chat_id, f"That's 3/3 warnings; User {target_user.mention} is banned!\nReason: {reason}")
             mongo_collection.delete_one({"user_id": target_user_id, "chat_id": chat_id})
         except Exception as e:
             logger.error(f"Failed to ban user: {str(e)}")
@@ -106,22 +108,24 @@ async def remove_warning(client, query):
 
     user_record = mongo_collection.find_one({"user_id": target_user_id, "chat_id": chat_id})
     if user_record:
+        target_user = await client.get_users(target_user_id)
+
         if user_record['warnings'] > 1:
             remaining_warnings = user_record['warnings'] - 1
             mongo_collection.update_one({"user_id": target_user_id, "chat_id": chat_id}, {"$set": {"warnings": remaining_warnings}})
             await client.edit_message_text(
                 chat_id, 
                 query.message.id,
-                f"Admin {query.from_user.mention} has removed {target_user_id}'s warning. Remaining warnings: {remaining_warnings}/3."
+                f"Admin {query.from_user.mention} has removed {target_user.mention}'s warning. Remaining warnings: {remaining_warnings}/3."
             )
-            await query.answer(f"Warning removed. User {target_user_id} now has {remaining_warnings}/3 warnings.", show_alert=False)
+            await query.answer(f"Warning removed. User {target_user.mention} now has {remaining_warnings}/3 warnings.", show_alert=False)
         else:
             mongo_collection.delete_one({"user_id": target_user_id, "chat_id": chat_id})
             await client.edit_message_text(
                 chat_id,
                 query.message.id,
-                f"Admin {query.from_user.mention} has removed {target_user_id}'s warning. User has no warnings left."
+                f"Admin {query.from_user.mention} has removed {target_user.mention}'s warning. User has no warnings left."
             )
-            await query.answer(f"User {target_user_id} has no warnings left.", show_alert=False)
+            await query.answer(f"User {target_user.mention} has no warnings left.", show_alert=False)
     else:
         await query.answer("No warnings to remove for this user.", show_alert=False)
