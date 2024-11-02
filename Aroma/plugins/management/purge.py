@@ -47,12 +47,6 @@ async def purge_messages(client, message):
         await client.send_message(chat_id, "You don't have rights to delete messages.")
         return
 
-    target_user_id = await get_target_user_id(client, chat_id, message)
-    if target_user_id is None:
-        await client.send_message(chat_id, "Could not find the target user.")
-        return
-
-    deleted_count = 0
     replied_msg = message.reply_to_message
 
     if not replied_msg:
@@ -61,18 +55,14 @@ async def purge_messages(client, message):
         await client.delete_messages(chat_id, error_msg.id)
         return
 
-    purge_to = replied_msg.id
+    count_to_delete = 10  # Number of messages to delete
+    deleted_count = 0
     message_ids = []
 
-    for message_id in range(replied_msg.id, purge_to + 1):
-        message_ids.append(message_id)
+    async for msg in client.get_chat_history(chat_id, limit=count_to_delete, offset_id=replied_msg.id):
+        message_ids.append(msg.id)
 
-        if len(message_ids) == 100:
-            await client.delete_messages(chat_id, message_ids, revoke=True)
-            deleted_count += len(message_ids)
-            message_ids = []
-
-    if len(message_ids) > 0:
+    if message_ids:
         await client.delete_messages(chat_id, message_ids, revoke=True)
         deleted_count += len(message_ids)
 
