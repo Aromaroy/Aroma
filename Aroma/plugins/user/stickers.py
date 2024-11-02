@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
+from pyrogram.types import Message
 from PIL import Image, ImageDraw, ImageFont
 from Aroma import app
 
@@ -65,12 +65,12 @@ async def create_sticker_from_text(message, text):
     return sticker.sticker.file_id
 
 async def generate_image_from_text(text):
-    img = Image.new('RGB', (512, 512), color=(255, 255, 255))
+    img = Image.new('RGBA', (512, 512), color=(255, 255, 255, 0))  # Transparent background
     d = ImageDraw.Draw(img)
     font = ImageFont.load_default()
     d.text((10, 10), text, fill=(0, 0, 0), font=font)
-    img_path = "temp_sticker.png"
-    img.save(img_path)
+    img_path = "temp_sticker.webp"
+    img.save(img_path, format='WEBP')  # Save as WebP
     return img_path
 
 @app.on_callback_query(filters.regex("save_sticker_pack"))
