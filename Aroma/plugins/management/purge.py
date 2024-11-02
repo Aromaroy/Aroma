@@ -22,8 +22,7 @@ async def get_target_user_id(client, chat_id, message):
 async def purge_messages(client, message):
     chat_id = message.chat.id
     bot_user = await client.get_me()
-    logger.info(f"Bot ID: {bot_user.id}, Chat ID: {chat_id}")
-
+    
     try:
         bot_member = await client.get_chat_member(chat_id, bot_user.id)
         if bot_member.status != ChatMemberStatus.ADMINISTRATOR:
@@ -34,7 +33,6 @@ async def purge_messages(client, message):
             return
     except Exception as e:
         await client.send_message(chat_id, f"Error retrieving bot status: {e}")
-        logger.error(f"Error retrieving bot status: {e}")
         return
 
     user_member = await client.get_chat_member(chat_id, message.from_user.id)
@@ -52,20 +50,16 @@ async def purge_messages(client, message):
         return
 
     deleted_count = 0
-    message_ids = []
+    message_ids = list(range(replied_msg.id + 1, message.id + 1))  # Get IDs between the replied message and the current message
 
-    # Use the iter_history method properly
-    async for msg in client.iter_history(chat_id, limit=100):
-        if msg.id > replied_msg.id:
-            message_ids.append(msg.id)
-            if len(message_ids) == 100:
-                await client.delete_messages(chat_id, message_ids, revoke=True)
-                deleted_count += len(message_ids)
-                message_ids = []
-
-    if message_ids:
-        await client.delete_messages(chat_id, message_ids, revoke=True)
-        deleted_count += len(message_ids)
+    # Delete messages in chunks of 100
+    for i in range(0, len(message_ids), 100):
+        chunk = message_ids[i:i + 100]
+        try:
+            await client.delete_messages(chat_id, chunk, revoke=True)
+            deleted_count += len(chunk)
+        except Exception as e:
+            await client.send_message(chat_id, f"Error deleting messages: {e}")
 
     notification_message = f"{deleted_count} messages deleted."
     sent_message = await client.send_message(chat_id, notification_message)
