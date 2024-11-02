@@ -53,10 +53,6 @@ async def purge_messages(client, message):
         await client.send_message(chat_id, "Could not find the target user.")
         return
 
-    if target_user_id == bot_user.id:
-        await client.send_message(chat_id, "Seriously, I'm not going to delete my own messages.")
-        return
-
     deleted_count = 0
 
     async for msg in client.get_chat_history(chat_id, limit=100):
