@@ -53,22 +53,14 @@ async def purge_messages(client, message):
         return
 
     deleted_count = 0
-    offset_id = 0
 
-    while True:
-        messages = await client.get_chat_history(chat_id, offset_id=offset_id, limit=100)
-        if not messages:
-            break
-
-        for msg in messages:
-            if msg.from_user and msg.from_user.id == target_user_id:
-                try:
-                    await client.delete_messages(chat_id, msg.message_id)
-                    deleted_count += 1
-                except Exception as e:
-                    logger.error(f"Failed to delete message {msg.message_id}: {e}")
-
-        offset_id = messages[-1].message_id  # Update the offset for pagination
+    async for msg in client.get_chat_history(chat_id, limit=100):
+        if msg.from_user and msg.from_user.id == target_user_id:
+            try:
+                await client.delete_messages(chat_id, msg.message_id)
+                deleted_count += 1
+            except Exception as e:
+                logger.error(f"Failed to delete message {msg.message_id}: {e}")
 
     notification_message = f"{deleted_count} messages deleted."
     sent_message = await client.send_message(chat_id, notification_message)
