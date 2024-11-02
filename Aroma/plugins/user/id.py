@@ -28,7 +28,19 @@ async def id_user(client, message):
     try:
         target_user = await client.get_users(target_user_id)
         target_name = target_user.first_name + (f" {target_user.last_name}" if target_user.last_name else "")
-        await client.send_message(chat_id, f"The ID of `{target_name}` is `{target_user_id}`.")
+        user_id_message = f"The ID of `{target_name}` is `{target_user_id}`."
+
+        # Check if in a group or channel and fetch their ID
+        if message.chat:
+            chat_type = message.chat.type
+            if chat_type in ['group', 'supergroup']:
+                group_id = message.chat.id
+                user_id_message += f"\nThe Group ID is `{group_id}`."
+            elif chat_type == 'channel':
+                channel_id = message.chat.id
+                user_id_message += f"\nThe Channel ID is `{channel_id}`."
+
+        await client.send_message(chat_id, user_id_message)
     except Exception as e:
         await client.send_message(chat_id, f"Failed to retrieve user ID: {str(e)}")
         logger.error(f"Failed to retrieve user ID: {str(e)}")
