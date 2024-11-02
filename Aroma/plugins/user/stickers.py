@@ -53,17 +53,15 @@ async def process_stickers(client, message: Message):
         return
 
     await message.reply("Creating your sticker pack...")
-    sticker_pack = await create_sticker_pack(stickers)
+    for sticker in stickers:
+        await message.reply_sticker(sticker)
 
-    keyboard = [[InlineKeyboardButton("Save Sticker Pack", callback_data="save_sticker_pack")]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    await message.reply("Your Sticker Pack has been created!", reply_markup=reply_markup)
+    await message.reply("Your stickers have been sent!")
 
 async def create_sticker_from_text(text):
     img_path = await generate_image_from_text(text)
     with open(img_path, 'rb') as img:
-        sticker = await app.send_sticker(chat_id="@your_sticker_channel", sticker=img)
+        sticker = await app.send_sticker(chat_id=message.chat.id, sticker=img)  # Send to the same chat
     return sticker.sticker.file_id
 
 async def generate_image_from_text(text):
@@ -74,10 +72,6 @@ async def generate_image_from_text(text):
     img_path = "temp_sticker.png"
     img.save(img_path)
     return img_path
-
-async def create_sticker_pack(stickers):
-    # Logic to create a sticker pack with the provided sticker IDs
-    return "sticker_pack_id"
 
 @app.on_callback_query(filters.regex("save_sticker_pack"))
 async def save_sticker_pack(client, callback_query):
