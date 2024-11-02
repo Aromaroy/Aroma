@@ -74,10 +74,14 @@ async def generate_image_from_text(formatted_text):
     except IOError:
         font = ImageFont.load_default()
 
-    img = Image.new('RGBA', (512, 512), color=(255, 255, 255, 0))
+    img_size = (512, 512)
+    img = Image.new('RGBA', img_size, color=(255, 255, 255, 0))
     draw = ImageDraw.Draw(img)
 
-    text_width, text_height = draw.textsize(formatted_text, font=font)
+    text_bbox = draw.textbbox((0, 0), formatted_text, font=font)
+    text_width = text_bbox[2] - text_bbox[0]
+    text_height = text_bbox[3] - text_bbox[1]
+
     bubble_padding = 10
     bubble_width = text_width + bubble_padding * 2
     bubble_height = text_height + bubble_padding * 2
