@@ -53,7 +53,8 @@ async def purge_messages(client, message):
     deleted_count = 0
     message_ids = []
 
-    async for msg in client.get_chat_history(chat_id, limit=100, offset_id=replied_msg.id):
+    # Use get_chat_history method instead
+    async for msg in client.get_chat_history(chat_id, limit=100):
         if msg.id > replied_msg.id:
             message_ids.append(msg.id)
             if len(message_ids) == 100:
