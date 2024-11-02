@@ -45,5 +45,3 @@ async def get_id(client: Client, message):
 
     except Exception as e:
         await message.reply(f"Error: {e}")
-
-Remove the code which say fetching it it will directly provide the data
