@@ -61,10 +61,10 @@ async def purge_messages(client, message):
         await client.delete_messages(chat_id, error_msg.message_id)
         return
 
-    purge_to = message.message_id
+    purge_to = message.reply_to_message.message_id  # Use the message ID of the replied message
 
     message_ids = []
-    
+
     for message_id in range(replied_msg.message_id, purge_to + 1):
         message_ids.append(message_id)
 
