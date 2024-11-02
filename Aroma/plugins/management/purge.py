@@ -54,8 +54,11 @@ async def purge_messages(client, message):
     deleted_count = 0
     message_ids = []
 
+    # Await the get_chat call to get the chat object
+    chat = await client.get_chat(chat_id)
+
     # Fetch messages and filter based on ID
-    async for msg in client.get_chat(chat_id).iter_history(limit=100):
+    async for msg in chat.iter_history(limit=100):
         if msg.id > replied_msg.id:
             message_ids.append(msg.id)
             if len(message_ids) == 100:
