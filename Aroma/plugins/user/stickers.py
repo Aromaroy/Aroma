@@ -2,6 +2,7 @@ import asyncio
 import logging
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
+from PIL import Image, ImageDraw, ImageFont
 from Aroma import app
 
 logging.basicConfig(level=logging.INFO)
@@ -35,11 +36,10 @@ async def create_stickers(client, message: Message):
     for reply_text in replies:
         sticker = await create_sticker_from_text(reply_text)
         user_sticker_requests[user_id].append(sticker)
-        created_stickers.append(sticker)  # Collect created stickers for sending
+        created_stickers.append(sticker)
 
-    # Send the created stickers as replies
     for sticker in created_stickers:
-        await message.reply_sticker(sticker)  # Assuming sticker is the ID of the sticker
+        await message.reply_sticker(sticker)
 
     await message.reply(f"{len(replies)} sticker(s) created!")
 
@@ -52,22 +52,32 @@ async def process_stickers(client, message: Message):
         await message.reply("No stickers to process.")
         return
 
-    await message.reply("Processing your stickers...")
+    await message.reply("Creating your sticker pack...")
     sticker_pack = await create_sticker_pack(stickers)
 
-    notification_message = "Your Sticker Pack has been created!"
     keyboard = [[InlineKeyboardButton("Save Sticker Pack", callback_data="save_sticker_pack")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    await client.send_message(message.chat.id, notification_message, reply_markup=reply_markup)
+    await message.reply("Your Sticker Pack has been created!", reply_markup=reply_markup)
 
 async def create_sticker_from_text(text):
-    # This function should return the ID of the created sticker
-    return "sticker_id"  # Replace with actual sticker creation logic
+    img_path = await generate_image_from_text(text)
+    with open(img_path, 'rb') as img:
+        sticker = await app.send_sticker(chat_id="@your_sticker_channel", sticker=img)
+    return sticker.sticker.file_id
+
+async def generate_image_from_text(text):
+    img = Image.new('RGB', (512, 512), color=(255, 255, 255))
+    d = ImageDraw.Draw(img)
+    font = ImageFont.load_default()
+    d.text((10, 10), text, fill=(0, 0, 0), font=font)
+    img_path = "temp_sticker.png"
+    img.save(img_path)
+    return img_path
 
 async def create_sticker_pack(stickers):
-    # This function should create a sticker pack and return its ID
-    return "sticker_pack_id"  # Replace with actual sticker pack creation logic
+    # Logic to create a sticker pack with the provided sticker IDs
+    return "sticker_pack_id"
 
 @app.on_callback_query(filters.regex("save_sticker_pack"))
 async def save_sticker_pack(client, callback_query):
