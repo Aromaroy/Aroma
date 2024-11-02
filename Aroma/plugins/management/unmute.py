@@ -50,7 +50,6 @@ async def unmute_user(client, message):
         await client.send_message(chat_id, "Could not find the target user.")
         return
 
-    # Skip checking target user's membership status
     try:
         # Restore ChatPermissions to allow user to send messages
         permissions = ChatPermissions(
