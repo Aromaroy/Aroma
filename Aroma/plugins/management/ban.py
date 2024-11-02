@@ -17,7 +17,7 @@ async def get_target_user_id(client, chat_id, message):
     else:
         return None
 
-@@app.on_message(filters.command('ban') & filters.group)
+@app.on_message(filters.command('ban') & filters.group)
 async def ban_user(client, message):
     chat_id = message.chat.id
     bot_user = await client.get_me()
