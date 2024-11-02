@@ -1,7 +1,6 @@
 import logging
 from pyrogram import Client, filters
-from pyrogram.enums import ChatMemberStatus, ChatMembersFilter, ChatType
-from pyrogram.types import ChatPermissions, Message
+from pyrogram.enums import ChatMemberStatus
 from Aroma import app
 
 logging.basicConfig(level=logging.INFO)
@@ -54,7 +53,6 @@ async def ban_user(client, message):
         await client.send_message(chat_id, "Could not find the target user.")
         return
 
-    # Attempt to get the target user's membership status; if they are not found, handle gracefully
     try:
         target_user_member = await client.get_chat_member(chat_id, target_user_id)
         logger.info(f"Target User ID: {target_user_id}, Status: {target_user_member.status}, Privileges: {target_user_member.privileges}")
@@ -63,13 +61,12 @@ async def ban_user(client, message):
             await client.send_message(chat_id, "You cannot ban an admin.")
             return
     except Exception:
-        # If user is not in the chat, we can proceed to ban them
         logger.info(f"Target User ID: {target_user_id} is not in the group or does not exist.")
 
     try:
         await client.ban_chat_member(chat_id, target_user_id)
-        # Notify the chat about the ban
-        target_name = f"User ID: {target_user_id}"  # Since they may not be found
+        target_user = await client.get_users(target_user_id)
+        target_name = target_user.first_name + (" " + target_user.last_name if target_user.last_name else "")
         admin_name = message.from_user.first_name + (" " + message.from_user.last_name if message.from_user.last_name else "")
         notification_message = f"A user has been banned in chat:\nUser: {target_name}\nBanned by: {admin_name}"
         await client.send_message(chat_id, notification_message)
