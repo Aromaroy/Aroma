@@ -67,6 +67,33 @@ async def antiraid(client, message):
     else:
         await message.reply(f"Anti-raid enabled: {user_limit} members in {duration_arg} will trigger a ban.")
 
+@app.on_message(filters.command('disableraid') & filters.group)
+async def disableraid(client, message):
+    chat_id = message.chat.id
+    bot_user = await client.get_me()
+    bot_member = await client.get_chat_member(chat_id, bot_user.id)
+    if bot_member.status != ChatMemberStatus.ADMINISTRATOR:
+        await message.reply("I am not an admin.")
+        return
+    if not bot_member.privileges.can_change_info or not bot_member.privileges.can_restrict_members:
+        await message.reply("I need the permissions to change group info and restrict users.")
+        return
+
+    user_member = await client.get_chat_member(chat_id, message.from_user.id)
+    if user_member.status != ChatMemberStatus.ADMINISTRATOR:
+        await message.reply("You are not an admin.")
+        return
+    if not user_member.privileges.can_change_info or not user_member.privileges.can_restrict_members:
+        await message.reply("You need the permissions to change group info and restrict users.")
+        return
+
+    previous_settings = raid_collection.find_one({"chat_id": chat_id})
+    if previous_settings:
+        await reset_raid(chat_id)
+        await message.reply("Anti-raid has been disabled.")
+    else:
+        await message.reply("Anti-raid is not currently enabled in this chat.")
+
 @app.on_chat_member_updated()
 async def monitor_chat_member(client, chat_member_updated):
     chat_id = chat_member_updated.chat.id
