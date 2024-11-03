@@ -1,6 +1,7 @@
 import logging
 from pyrogram import Client, filters
-from pyrogram.enums import ChatMemberStatus
+from pyrogram.enums import ChatMemberStatus, ChatMembersFilter, ChatType
+from pyrogram.types import ChatPrivileges, ChatPermissions, Message
 from pymongo import MongoClient
 from config import MONGO_DB_URI
 import asyncio
