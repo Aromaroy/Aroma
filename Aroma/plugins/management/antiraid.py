@@ -122,7 +122,7 @@ async def monitor_chat_member(client, chat_member_updated):
 
         if len(raid_settings['new_members']) > raid_settings['user_limit']:
             for user_id in raid_settings['new_members']:
-                await client.kick_chat_member(chat_id, user_id)
+                await client.ban_chat_member(chat_id, user_id)
                 logger.info(f"Banned user {user_id} due to anti-raid.")
 
         raid_collection.update_one({"chat_id": chat_id}, {"$set": {"new_members": [], "last_check_time": now}})
