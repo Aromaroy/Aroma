@@ -3,7 +3,7 @@ from pyrogram import Client, filters
 from pyrogram.enums import ChatMemberStatus
 from pymongo import MongoClient
 from config import MONGO_DB_URI
-from Aroma import app
+from aroma import app
 import asyncio
 from datetime import datetime, timedelta
 
