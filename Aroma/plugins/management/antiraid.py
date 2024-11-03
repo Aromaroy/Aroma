@@ -109,12 +109,20 @@ async def monitor_chat_member(client, chat_member_updated):
         return
 
     new_member = chat_member_updated.new_chat_member
-    if new_member is None:
+    if new_member is None or new_member.status != ChatMemberStatus.MEMBER:
         return
 
-    if new_member.status == ChatMemberStatus.MEMBER:
+    if new_member.user.id not in raid_settings['new_members']:
         raid_settings['new_members'].append(new_member.user.id)
         logger.info(f"New member detected: {new_member.user.id} in chat {chat_id}")
+
+        if len(raid_settings['new_members']) > raid_settings['user_limit']:
+            for user_id in raid_settings['new_members']:
+                await client.ban_chat_member(chat_id, user_id)
+                logger.info(f"Banned user {user_id} due to anti-raid.")
+
+            raid_collection.update_one({"chat_id": chat_id}, {"$set": {"new_members": [], "last_check_time": datetime.now()}})
+            return
 
     now = datetime.now()
     if (now - raid_settings['last_check_time']).seconds >= 60:
