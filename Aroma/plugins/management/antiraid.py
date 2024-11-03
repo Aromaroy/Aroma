@@ -106,17 +106,26 @@ async def monitor_chat_member(client, chat_member_updated):
     raid_settings = raid_collection.find_one({"chat_id": chat_id})
 
     if not raid_settings:
+        logger.info(f"No raid settings found for chat {chat_id}.")
         return
 
     new_member = chat_member_updated.new_chat_member
-    if new_member is None or new_member.status != ChatMemberStatus.MEMBER:
+    if new_member is None:
+        logger.info("New member is None.")
+        return
+
+    logger.info(f"Member update detected for user {new_member.user.id} with status {new_member.status} in chat {chat_id}.")
+
+    if new_member.status != ChatMemberStatus.MEMBER:
+        logger.info(f"User {new_member.user.id} is not a MEMBER. Current status: {new_member.status}.")
         return
 
     if new_member.user.id not in raid_settings['new_members']:
         raid_settings['new_members'].append(new_member.user.id)
-        logger.info(f"New member detected: {new_member.user.id} in chat {chat_id}")
+        logger.info(f"New member detected: {new_member.user.id} in chat {chat_id}. Total new members: {len(raid_settings['new_members'])}")
 
         if len(raid_settings['new_members']) > raid_settings['user_limit']:
+            logger.info(f"User limit exceeded: {len(raid_settings['new_members'])} > {raid_settings['user_limit']}. Banning users.")
             for user_id in raid_settings['new_members']:
                 try:
                     await client.ban_chat_member(chat_id, user_id)
@@ -126,6 +135,7 @@ async def monitor_chat_member(client, chat_member_updated):
 
             # Clear new_members list after banning
             raid_collection.update_one({"chat_id": chat_id}, {"$set": {"new_members": [], "last_check_time": datetime.now()}})
+            logger.info(f"New members list cleared for chat {chat_id}.")
             return
 
     now = datetime.now()
@@ -133,6 +143,7 @@ async def monitor_chat_member(client, chat_member_updated):
         logger.info(f"Checking new members in chat {chat_id}: {len(raid_settings['new_members'])} found.")
 
         if len(raid_settings['new_members']) > raid_settings['user_limit']:
+            logger.info(f"User limit exceeded during scheduled check: {len(raid_settings['new_members'])} > {raid_settings['user_limit']}. Banning users.")
             for user_id in raid_settings['new_members']:
                 try:
                     await client.ban_chat_member(chat_id, user_id)
@@ -142,6 +153,7 @@ async def monitor_chat_member(client, chat_member_updated):
 
             # Clear new_members list after banning
             raid_collection.update_one({"chat_id": chat_id}, {"$set": {"new_members": [], "last_check_time": now}})
+            logger.info(f"New members list cleared for chat {chat_id}.")
 
 def convert_duration_to_seconds(duration_str):
     time_value = int(duration_str[:-1])
