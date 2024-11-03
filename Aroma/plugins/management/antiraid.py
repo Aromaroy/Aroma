@@ -116,14 +116,19 @@ async def monitor_chat_member(client, chat_member_updated):
 
     logger.info(f"Member update detected for user {new_member.user.id} in chat {chat_id}.")
 
-    # Always add new members to the list
-    raid_settings['new_members'].append(new_member.user.id)
-    logger.info(f"New member detected: {new_member.user.id} in chat {chat_id}. Total new members: {len(raid_settings['new_members'])}")
+    # Always add the new member
+    raid_collection.update_one(
+        {"chat_id": chat_id},
+        {"$addToSet": {"new_members": new_member.user.id}}  # Use $addToSet to prevent duplicates
+    )
+    
+    updated_settings = raid_collection.find_one({"chat_id": chat_id})
+    logger.info(f"Total new members: {len(updated_settings['new_members'])}")
 
     # Check if the user limit has been exceeded
-    if len(raid_settings['new_members']) > raid_settings['user_limit']:
-        logger.info(f"User limit exceeded: {len(raid_settings['new_members'])} > {raid_settings['user_limit']}. Banning users.")
-        for user_id in raid_settings['new_members']:
+    if len(updated_settings['new_members']) > updated_settings['user_limit']:
+        logger.info(f"User limit exceeded: {len(updated_settings['new_members'])} > {updated_settings['user_limit']}. Banning users.")
+        for user_id in updated_settings['new_members']:
             try:
                 await client.ban_chat_member(chat_id, user_id)
                 logger.info(f"Banned user {user_id} due to anti-raid.")
