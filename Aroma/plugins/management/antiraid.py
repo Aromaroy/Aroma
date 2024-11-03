@@ -74,18 +74,18 @@ async def antiraid(client, message):
     previous_settings = raid_collection.find_one({"chat_id": chat_id})
 
     await message.reply(
-        f"Raid mode is currently disabled in {message.chat.title}.\n"
-        
-        f"Would you like to enable raid mode for {format_duration(duration_seconds)} "
-        
-        f"with a limit of {user_limit} users?\n",
-        reply_markup=InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton("Enable raid", callback_data=f"enable_raid:{duration_seconds}:{user_limit}"),
-                InlineKeyboardButton("Cancel", callback_data="cancel_raid")
-            ]
-        ])
-    )
+    f"Raid mode is currently disabled in {message.chat.title}.\n\n"
+
+    f"Would you like to enable raid mode for {format_duration(duration_seconds)}\n\n"
+
+    f"with a limit of {user_limit} users?\n\n",
+    reply_markup=InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("Enable raid", callback_data=f"enable_raid:{duration_seconds}:{user_limit}"),
+            InlineKeyboardButton("Cancel", callback_data="cancel_raid")
+        ]
+    ])
+)
 
 @app.on_callback_query()
 async def handle_callback_query(client, callback_query):
