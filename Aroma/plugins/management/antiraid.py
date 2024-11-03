@@ -4,7 +4,7 @@ from pyrogram.enums import ChatMemberStatus
 from pymongo import MongoClient
 from config import MONGO_DB_URI
 import asyncio
-from Aroma import app
+from aroma import app
 from datetime import datetime, timedelta
 
 logging.basicConfig(level=logging.INFO)
