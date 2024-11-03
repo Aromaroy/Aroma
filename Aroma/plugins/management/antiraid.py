@@ -1,3 +1,4 @@
+
 import logging
 from pyrogram import Client, filters
 from pyrogram.enums import ChatMemberStatus
@@ -75,12 +76,14 @@ async def antiraid(client, message):
 
     await message.reply(
     f"Raid mode is currently disabled in {message.chat.title}.\n\n"
+
     f"Would you like to enable raid mode for {format_duration(duration_seconds)} with a limit of {user_limit} users?\n\n",
-    reply_markup=InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton("Enable raid", callback_data=f"enable_raid:{duration_seconds}:{user_limit}")]
+    reply_markup=InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("Enable raid", callback_data=f"enable_raid:{duration_seconds}:{user_limit}"),
+            InlineKeyboardButton("Cancel", callback_data="cancel_raid")
         ]
-    )
+    ])
 )
 
 @app.on_callback_query()
