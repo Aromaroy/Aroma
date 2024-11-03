@@ -3,7 +3,6 @@ from pyrogram import Client, filters
 from pyrogram.enums import ChatMemberStatus
 from pymongo import MongoClient
 from config import MONGO_DB_URI
-from Aroma import app
 import asyncio
 from datetime import datetime, timedelta
 
@@ -19,7 +18,9 @@ async def set_raid_settings(chat_id, duration, user_limit):
     raid_data = {
         "chat_id": chat_id,
         "end_time": end_time,
-        "user_limit": user_limit
+        "user_limit": user_limit,
+        "last_check_time": datetime.now(),
+        "new_members": []
     }
     raid_collection.update_one({"chat_id": chat_id}, {"$set": raid_data}, upsert=True)
     logger.info(f"Raid settings updated for chat {chat_id}: {raid_data}")
@@ -30,11 +31,12 @@ async def antiraid(client, message):
     chat_id = message.chat.id
     bot_user = await client.get_me()
     bot_member = await client.get_chat_member(chat_id, bot_user.id)
+
     if bot_member.status != ChatMemberStatus.ADMINISTRATOR:
         await message.reply("I am not an admin.")
         return
     if not bot_member.privileges.can_change_info or not bot_member.privileges.can_restrict_members:
-        await message.reply("I need the permissions to change group info and restrict users.")
+        await message.reply("I need permissions to change group info and restrict users.")
         return
 
     user_member = await client.get_chat_member(chat_id, message.from_user.id)
@@ -42,11 +44,10 @@ async def antiraid(client, message):
         await message.reply("You are not an admin.")
         return
     if not user_member.privileges.can_change_info or not user_member.privileges.can_restrict_members:
-        await message.reply("You need the permissions to change group info and restrict users.")
+        await message.reply("You need permissions to change group info and restrict users.")
         return
 
     command_args = message.command[1:]
-
     if len(command_args) != 2:
         await message.reply("Usage: /antiraid {time} {number of people}.")
         return
@@ -72,19 +73,12 @@ async def disableraid(client, message):
     chat_id = message.chat.id
     bot_user = await client.get_me()
     bot_member = await client.get_chat_member(chat_id, bot_user.id)
+
     if bot_member.status != ChatMemberStatus.ADMINISTRATOR:
         await message.reply("I am not an admin.")
         return
     if not bot_member.privileges.can_change_info or not bot_member.privileges.can_restrict_members:
-        await message.reply("I need the permissions to change group info and restrict users.")
-        return
-
-    user_member = await client.get_chat_member(chat_id, message.from_user.id)
-    if user_member.status != ChatMemberStatus.ADMINISTRATOR:
-        await message.reply("You are not an admin.")
-        return
-    if not user_member.privileges.can_change_info or not user_member.privileges.can_restrict_members:
-        await message.reply("You need the permissions to change group info and restrict users.")
+        await message.reply("I need permissions to change group info and restrict users.")
         return
 
     previous_settings = raid_collection.find_one({"chat_id": chat_id})
@@ -98,15 +92,21 @@ async def disableraid(client, message):
 async def monitor_chat_member(client, chat_member_updated):
     chat_id = chat_member_updated.chat.id
     raid_settings = raid_collection.find_one({"chat_id": chat_id})
+    
     if not raid_settings:
         return
 
-    new_member_count = len(await client.get_chat_members(chat_id))
-    current_limit = raid_settings['user_limit']
-
-    if new_member_count >= current_limit:
-        await client.kick_chat_member(chat_id, chat_member_updated.new_chat_member.user.id)
-        logger.info(f"Banned user {chat_member_updated.new_chat_member.user.id} due to anti-raid.")
+    if chat_member_updated.new_chat_member.status == ChatMemberStatus.MEMBER:
+        raid_settings['new_members'].append(chat_member_updated.new_chat_member.user.id)
+    
+    now = datetime.now()
+    if (now - raid_settings['last_check_time']).seconds >= 60:
+        if len(raid_settings['new_members']) > raid_settings['user_limit']:
+            for user_id in raid_settings['new_members']:
+                await client.kick_chat_member(chat_id, user_id)
+                logger.info(f"Banned user {user_id} due to anti-raid.")
+        
+        raid_collection.update_one({"chat_id": chat_id}, {"$set": {"new_members": [], "last_check_time": now}})
 
 def convert_duration_to_seconds(duration_str):
     time_value = int(duration_str[:-1])
