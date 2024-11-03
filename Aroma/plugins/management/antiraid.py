@@ -33,12 +33,11 @@ async def disable_raid(chat_id):
 async def antiraid(client, message):
     chat_id = message.chat.id
     bot_user = await client.get_me()
-
     bot_member = await client.get_chat_member(chat_id, bot_user.id)
     if bot_member.status != ChatMemberStatus.ADMINISTRATOR:
         await message.reply("I am not an admin.")
         return
-    if not bot_member.privileges.can_change_info or not bot_member.privileges.can_restrict_users:
+    if not bot_member.privileges.can_change_info or not bot_member.privileges.can_restrict_members:
         await message.reply("I need the permissions to change group info and restrict users.")
         return
 
@@ -46,7 +45,7 @@ async def antiraid(client, message):
     if user_member.status != ChatMemberStatus.ADMINISTRATOR:
         await message.reply("You are not an admin.")
         return
-    if not user_member.privileges.can_change_info or not user_member.privileges.can_restrict_users:
+    if not user_member.privileges.can_change_info or not user_member.privileges.can_restrict_members:
         await message.reply("You need the permissions to change group info and restrict users.")
         return
 
