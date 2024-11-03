@@ -28,6 +28,16 @@ async def set_raid_settings(chat_id, duration, user_limit):
     logger.info(f"Raid settings updated for chat {chat_id}: {raid_data}")
     asyncio.create_task(reset_raid_after_duration(chat_id, duration))
 
+def format_duration(duration_seconds):
+    if duration_seconds >= 86400:
+        return f"{duration_seconds // 86400} days"
+    elif duration_seconds >= 3600:
+        return f"{duration_seconds // 3600} hours"
+    elif duration_seconds >= 60:
+        return f"{duration_seconds // 60} minutes"
+    else:
+        return f"{duration_seconds} seconds"
+
 @app.on_message(filters.command('antiraid') & filters.group)
 async def antiraid(client, message):
     chat_id = message.chat.id
@@ -65,7 +75,8 @@ async def antiraid(client, message):
 
     await message.reply(
         f"Raid mode is currently disabled in {message.chat.title}.\n"
-        f"Would you like to enable raid mode for {duration_arg} with a limit of {user_limit} users?\n",
+        f"Would you like to enable raid mode for {format_duration(duration_seconds)} "
+        f"with a limit of {user_limit} users?\n",
         reply_markup=InlineKeyboardMarkup([
             [
                 InlineKeyboardButton("Enable raid", callback_data=f"enable_raid:{duration_seconds}:{user_limit}"),
