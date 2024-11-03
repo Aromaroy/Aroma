@@ -118,9 +118,13 @@ async def monitor_chat_member(client, chat_member_updated):
 
         if len(raid_settings['new_members']) > raid_settings['user_limit']:
             for user_id in raid_settings['new_members']:
-                await client.ban_chat_member(chat_id, user_id)
-                logger.info(f"Banned user {user_id} due to anti-raid.")
+                try:
+                    await client.ban_chat_member(chat_id, user_id)
+                    logger.info(f"Banned user {user_id} due to anti-raid.")
+                except Exception as e:
+                    logger.error(f"Failed to ban user {user_id}: {e}")
 
+            # Clear new_members list after banning
             raid_collection.update_one({"chat_id": chat_id}, {"$set": {"new_members": [], "last_check_time": datetime.now()}})
             return
 
@@ -130,10 +134,14 @@ async def monitor_chat_member(client, chat_member_updated):
 
         if len(raid_settings['new_members']) > raid_settings['user_limit']:
             for user_id in raid_settings['new_members']:
-                await client.ban_chat_member(chat_id, user_id)
-                logger.info(f"Banned user {user_id} due to anti-raid.")
+                try:
+                    await client.ban_chat_member(chat_id, user_id)
+                    logger.info(f"Banned user {user_id} due to anti-raid.")
+                except Exception as e:
+                    logger.error(f"Failed to ban user {user_id}: {e}")
 
-        raid_collection.update_one({"chat_id": chat_id}, {"$set": {"new_members": [], "last_check_time": now}})
+            # Clear new_members list after banning
+            raid_collection.update_one({"chat_id": chat_id}, {"$set": {"new_members": [], "last_check_time": now}})
 
 def convert_duration_to_seconds(duration_str):
     time_value = int(duration_str[:-1])
