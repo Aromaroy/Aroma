@@ -22,7 +22,7 @@ async def get_target_user_id(client, chat_id, message):
         return user.id
     return None
 
-@app.on_message(filters.command('antispam') & filters.group)
+@app.on_message(filters.command('antispam'))
 async def antispam_enable(client, message):
     chat_id = message.chat.id
     bot_user = await client.get_me()
