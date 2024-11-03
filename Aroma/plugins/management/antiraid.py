@@ -1,0 +1,115 @@
+import logging
+from pyrogram import Client, filters
+from pyrogram.enums import ChatMemberStatus
+from pymongo import MongoClient
+from config import MONGO_DB_URI
+from Aroma import app
+import asyncio
+from datetime import datetime, timedelta
+
+mongo_client = MongoClient(MONGO_DB_URI)
+mongo_db = mongo_client["raid"]
+mongo_collection = mongo_db["antiraid"]
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+raid_settings = {}
+
+async def set_raid_settings(chat_id, duration, user_limit):
+    end_time = datetime.now() + timedelta(seconds=duration)
+    raid_settings[chat_id] = {"end_time": end_time, "user_limit": user_limit}
+    logger.info(f"Raid settings updated for chat {chat_id}: {raid_settings[chat_id]}")
+    asyncio.create_task(reset_raid_after_duration(chat_id, duration))
+
+async def disable_raid(chat_id):
+    if chat_id in raid_settings:
+        del raid_settings[chat_id]
+        logger.info(f"Raid disabled for chat {chat_id}")
+
+@app.on_message(filters.command('antiraid') & filters.group)
+async def antiraid(client, message):
+    chat_id = message.chat.id
+    bot_user = await client.get_me()
+
+    # Check if the bot is an admin with required privileges
+    bot_member = await client.get_chat_member(chat_id, bot_user.id)
+    if bot_member.status != ChatMemberStatus.ADMINISTRATOR:
+        await message.reply("I am not an admin.")
+        return
+    if not bot_member.privileges.can_change_info or not bot_member.privileges.can_restrict_users:
+        await message.reply("I need the permissions to change group info and restrict users.")
+        return
+
+    # Check if the user is an admin with required privileges
+    user_member = await client.get_chat_member(chat_id, message.from_user.id)
+    if user_member.status != ChatMemberStatus.ADMINISTRATOR:
+        await message.reply("You are not an admin.")
+        return
+    if not user_member.privileges.can_change_info or not user_member.privileges.can_restrict_users:
+        await message.reply("You need the permissions to change group info and restrict users.")
+        return
+
+    command_args = message.command[1:]
+    
+    if not command_args or command_args[0] == "disable":
+        await disable_raid(chat_id)
+        await message.reply("Anti-raid has been disabled.")
+        return
+
+    if len(command_args) != 2:
+        await message.reply("Usage: /antiraid {time} {number of people}.")
+        return
+
+    duration_arg = command_args[0]
+    user_limit = int(command_args[1])
+
+    duration_seconds = convert_duration_to_seconds(duration_arg)
+    if duration_seconds is None:
+        await message.reply("Invalid time format. Use m for minutes, h for hours, d for days, or x for permanent.")
+        return
+
+    previous_settings = raid_settings.get(chat_id)
+    await set_raid_settings(chat_id, duration_seconds, user_limit)
+
+    if previous_settings:
+        await message.reply(f"Raid settings changed from {previous_settings['user_limit']} members to {user_limit} members for the next {duration_arg}.")
+    else:
+        await message.reply(f"Anti-raid enabled: {user_limit} members in {duration_arg} will trigger a ban.")
+
+@app.on_chat_member_updated()
+async def monitor_chat_member(client, chat_member_updated):
+    chat_id = chat_member_updated.chat.id
+    if chat_id not in raid_settings:
+        return
+
+    new_member_count = len(await client.get_chat_members(chat_id))
+    current_limit = raid_settings[chat_id]['user_limit']
+    
+    if new_member_count >= current_limit:
+        await client.kick_chat_member(chat_id, chat_member_updated.new_chat_member.user.id)
+        logger.info(f"Banned user {chat_member_updated.new_chat_member.user.id} due to anti-raid.")
+
+def convert_duration_to_seconds(duration_str):
+    time_value = int(duration_str[:-1])
+    time_unit = duration_str[-1]
+
+    if time_unit == 'm':
+        return time_value * 60
+    elif time_unit == 'h':
+        return time_value * 3600
+    elif time_unit == 'd':
+        return time_value * 86400
+    elif time_unit == 'x':
+        return float('inf')  # Permanent
+    else:
+        return None
+
+async def reset_raid(chat_id):
+    if chat_id in raid_settings:
+        del raid_settings[chat_id]
+        logger.info(f"Raid settings reset for chat {chat_id}")
+
+async def reset_raid_after_duration(chat_id, duration):
+    await asyncio.sleep(duration)
+    await reset_raid(chat_id)
