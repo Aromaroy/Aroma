@@ -110,7 +110,11 @@ async def monitor_chat_member(client, chat_member_updated):
         return
 
     new_member = chat_member_updated.new_chat_member
-    if new_member is None or new_member.status != ChatMemberStatus.MEMBER:
+    if new_member is None:
+        logger.info("No new member data available.")
+        return  # Exit if new_member is None
+
+    if new_member.status != ChatMemberStatus.MEMBER:
         logger.info(f"User {new_member.user.id} is not a MEMBER. Current status: {new_member.status}.")
         return
 
@@ -121,7 +125,7 @@ async def monitor_chat_member(client, chat_member_updated):
         {"chat_id": chat_id},
         {"$addToSet": {"new_members": new_member.user.id}}  # Use $addToSet to prevent duplicates
     )
-    
+
     updated_settings = raid_collection.find_one({"chat_id": chat_id})
     logger.info(f"Total new members: {len(updated_settings['new_members'])}")
 
