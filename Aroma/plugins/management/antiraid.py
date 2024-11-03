@@ -7,32 +7,33 @@ from Aroma import app
 import asyncio
 from datetime import datetime, timedelta
 
-mongo_client = MongoClient(MONGO_DB_URI)
-mongo_db = mongo_client["raid"]
-mongo_collection = mongo_db["antiraid"]
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-raid_settings = {}
+mongo_client = MongoClient(MONGO_DB_URI)
+db = mongo_client['raid_db']
+raid_collection = db['raid_settings']
 
 async def set_raid_settings(chat_id, duration, user_limit):
     end_time = datetime.now() + timedelta(seconds=duration)
-    raid_settings[chat_id] = {"end_time": end_time, "user_limit": user_limit}
-    logger.info(f"Raid settings updated for chat {chat_id}: {raid_settings[chat_id]}")
+    raid_data = {
+        "chat_id": chat_id,
+        "end_time": end_time,
+        "user_limit": user_limit
+    }
+    raid_collection.update_one({"chat_id": chat_id}, {"$set": raid_data}, upsert=True)
+    logger.info(f"Raid settings updated for chat {chat_id}: {raid_data}")
     asyncio.create_task(reset_raid_after_duration(chat_id, duration))
 
 async def disable_raid(chat_id):
-    if chat_id in raid_settings:
-        del raid_settings[chat_id]
-        logger.info(f"Raid disabled for chat {chat_id}")
+    raid_collection.delete_one({"chat_id": chat_id})
+    logger.info(f"Raid disabled for chat {chat_id}")
 
 @app.on_message(filters.command('antiraid') & filters.group)
 async def antiraid(client, message):
     chat_id = message.chat.id
     bot_user = await client.get_me()
 
-    # Check if the bot is an admin with required privileges
     bot_member = await client.get_chat_member(chat_id, bot_user.id)
     if bot_member.status != ChatMemberStatus.ADMINISTRATOR:
         await message.reply("I am not an admin.")
@@ -41,7 +42,6 @@ async def antiraid(client, message):
         await message.reply("I need the permissions to change group info and restrict users.")
         return
 
-    # Check if the user is an admin with required privileges
     user_member = await client.get_chat_member(chat_id, message.from_user.id)
     if user_member.status != ChatMemberStatus.ADMINISTRATOR:
         await message.reply("You are not an admin.")
@@ -51,7 +51,7 @@ async def antiraid(client, message):
         return
 
     command_args = message.command[1:]
-    
+
     if not command_args or command_args[0] == "disable":
         await disable_raid(chat_id)
         await message.reply("Anti-raid has been disabled.")
@@ -69,7 +69,7 @@ async def antiraid(client, message):
         await message.reply("Invalid time format. Use m for minutes, h for hours, d for days, or x for permanent.")
         return
 
-    previous_settings = raid_settings.get(chat_id)
+    previous_settings = raid_collection.find_one({"chat_id": chat_id})
     await set_raid_settings(chat_id, duration_seconds, user_limit)
 
     if previous_settings:
@@ -80,12 +80,13 @@ async def antiraid(client, message):
 @app.on_chat_member_updated()
 async def monitor_chat_member(client, chat_member_updated):
     chat_id = chat_member_updated.chat.id
-    if chat_id not in raid_settings:
+    raid_settings = raid_collection.find_one({"chat_id": chat_id})
+    if not raid_settings:
         return
 
     new_member_count = len(await client.get_chat_members(chat_id))
-    current_limit = raid_settings[chat_id]['user_limit']
-    
+    current_limit = raid_settings['user_limit']
+
     if new_member_count >= current_limit:
         await client.kick_chat_member(chat_id, chat_member_updated.new_chat_member.user.id)
         logger.info(f"Banned user {chat_member_updated.new_chat_member.user.id} due to anti-raid.")
@@ -101,14 +102,13 @@ def convert_duration_to_seconds(duration_str):
     elif time_unit == 'd':
         return time_value * 86400
     elif time_unit == 'x':
-        return float('inf')  # Permanent
+        return float('inf')
     else:
         return None
 
 async def reset_raid(chat_id):
-    if chat_id in raid_settings:
-        del raid_settings[chat_id]
-        logger.info(f"Raid settings reset for chat {chat_id}")
+    raid_collection.delete_one({"chat_id": chat_id})
+    logger.info(f"Raid settings reset for chat {chat_id}")
 
 async def reset_raid_after_duration(chat_id, duration):
     await asyncio.sleep(duration)
