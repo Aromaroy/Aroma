@@ -63,15 +63,14 @@ async def antiraid(client, message):
 
     previous_settings = raid_collection.find_one({"chat_id": chat_id})
 
-    if previous_settings:
-        await message.reply(
-            f"Raid mode is currently disabled in {message.chat.title}.\n"
-            f"Would you like to enable raid mode for {duration_arg} with a limit of {user_limit} users?\n",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("Enable raid", callback_data=f"enable_raid:{duration_seconds}:{user_limit}")],
-                [InlineKeyboardButton("Cancel", callback_data="cancel_raid")]
-            ])
-        )
+    await message.reply(
+        f"Raid mode is currently disabled in {message.chat.title}.\n"
+        f"Would you like to enable raid mode for {duration_arg} with a limit of {user_limit} users?\n",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("Enable raid", callback_data=f"enable_raid:{duration_seconds}:{user_limit}")],
+            [InlineKeyboardButton("Cancel", callback_data="cancel_raid")]
+        ])
+    )
     else:
         await set_raid_settings(chat_id, duration_seconds, user_limit)
         await message.reply(f"Anti-raid enabled: {user_limit} members in {duration_arg} will trigger a ban.")
