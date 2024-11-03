@@ -57,7 +57,7 @@ async def antiraid(client, message):
         return
 
     if len(command_args) != 2:
-        await message.reply("Usage: /antiraid {time} {number of people}.")
+        await message.reply("Usage: /antiraid {time} {number of people} or /antiraid disable.")
         return
 
     duration_arg = command_args[0]
