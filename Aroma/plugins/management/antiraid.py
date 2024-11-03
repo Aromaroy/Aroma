@@ -71,9 +71,6 @@ async def antiraid(client, message):
             [InlineKeyboardButton("Cancel", callback_data="cancel_raid")]
         ])
     )
-    else:
-        await set_raid_settings(chat_id, duration_seconds, user_limit)
-        await message.reply(f"Anti-raid enabled: {user_limit} members in {duration_arg} will trigger a ban.")
 
 @app.on_callback_query()
 async def handle_callback_query(client, callback_query):
