@@ -108,8 +108,12 @@ async def monitor_chat_member(client, chat_member_updated):
     if not raid_settings:
         return
 
-    if chat_member_updated.new_chat_member.status == ChatMemberStatus.MEMBER:
-        raid_settings['new_members'].append(chat_member_updated.new_chat_member.user.id)
+    new_member = chat_member_updated.new_chat_member
+    if new_member is None:
+        return
+
+    if new_member.status == ChatMemberStatus.MEMBER:
+        raid_settings['new_members'].append(new_member.user.id)
 
     now = datetime.now()
     if (now - raid_settings['last_check_time']).seconds >= 60:
