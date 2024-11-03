@@ -25,10 +25,6 @@ async def set_raid_settings(chat_id, duration, user_limit):
     logger.info(f"Raid settings updated for chat {chat_id}: {raid_data}")
     asyncio.create_task(reset_raid_after_duration(chat_id, duration))
 
-async def disable_raid(chat_id):
-    raid_collection.delete_one({"chat_id": chat_id})
-    logger.info(f"Raid disabled for chat {chat_id}")
-
 @app.on_message(filters.command('antiraid') & filters.group)
 async def antiraid(client, message):
     chat_id = message.chat.id
@@ -51,13 +47,8 @@ async def antiraid(client, message):
 
     command_args = message.command[1:]
 
-    if not command_args or command_args[0] == "disable":
-        await disable_raid(chat_id)
-        await message.reply("Anti-raid has been disabled.")
-        return
-
     if len(command_args) != 2:
-        await message.reply("Usage: /antiraid {time} {number of people} or /antiraid disable.")
+        await message.reply("Usage: /antiraid {time} {number of people}.")
         return
 
     duration_arg = command_args[0]
