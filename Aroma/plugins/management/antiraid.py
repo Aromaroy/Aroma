@@ -67,8 +67,10 @@ async def antiraid(client, message):
         f"Raid mode is currently disabled in {message.chat.title}.\n"
         f"Would you like to enable raid mode for {duration_arg} with a limit of {user_limit} users?\n",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("Enable raid", callback_data=f"enable_raid:{duration_seconds}:{user_limit}")],
-            [InlineKeyboardButton("Cancel", callback_data="cancel_raid")]
+            [
+                InlineKeyboardButton("Enable raid", callback_data=f"enable_raid:{duration_seconds}:{user_limit}"),
+                InlineKeyboardButton("Cancel", callback_data="cancel_raid")
+            ]
         ])
     )
 
