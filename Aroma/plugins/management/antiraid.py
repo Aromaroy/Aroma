@@ -92,12 +92,15 @@ async def handle_callback_query(client, callback_query):
     user_member = await client.get_chat_member(chat_id, callback_query.from_user.id)
 
     if "enable_raid" in data:
-        if user_member.status != ChatMemberStatus.ADMINISTRATOR and user_member.status != ChatMemberStatus.CREATOR:
+        if user_member.status != ChatMemberStatus.ADMINISTRATOR:
             await callback_query.answer("You do not have permission to enable raid mode.", show_alert=True)
             return
 
         _, duration, user_limit = data.split(":")
-        await set_raid_settings(chat_id, int(duration), int(user_limit))
+        duration_seconds = int(duration)  # Convert duration to integer
+        user_limit = int(user_limit)  # Convert user limit to integer
+
+        await set_raid_settings(chat_id, duration_seconds, user_limit)
         await callback_query.answer("Raid mode has been enabled.")
         await callback_query.edit_message_text(
             f"Raid mode has been enabled in {callback_query.message.chat.title}.\n\n"
