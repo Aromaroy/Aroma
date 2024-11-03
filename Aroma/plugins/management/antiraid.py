@@ -100,8 +100,8 @@ async def handle_callback_query(client, callback_query):
         await set_raid_settings(chat_id, int(duration), int(user_limit))
         await callback_query.answer("Raid mode has been enabled.")
         await callback_query.edit_message_text(
-            f"Raid mode has been enabled in {callback_query.message.chat.title}.\n"
-            f"For the next {duration} seconds, any new users will be banned when hitting the limit of {user_limit}."
+            f"Raid mode has been enabled in {callback_query.message.chat.title}.\n\n"
+            f"For the next {format_duration(duration_seconds)} seconds, any new users will be banned when hitting the limit of {user_limit}."
         )
     elif data == "cancel_raid":
         await callback_query.answer("Action cancelled. Raid mode will stay disabled.")
