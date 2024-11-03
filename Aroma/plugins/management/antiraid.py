@@ -114,9 +114,12 @@ async def monitor_chat_member(client, chat_member_updated):
 
     if new_member.status == ChatMemberStatus.MEMBER:
         raid_settings['new_members'].append(new_member.user.id)
+        logger.info(f"New member detected: {new_member.user.id} in chat {chat_id}")
 
     now = datetime.now()
     if (now - raid_settings['last_check_time']).seconds >= 60:
+        logger.info(f"Checking new members in chat {chat_id}: {len(raid_settings['new_members'])} found.")
+
         if len(raid_settings['new_members']) > raid_settings['user_limit']:
             for user_id in raid_settings['new_members']:
                 await client.kick_chat_member(chat_id, user_id)
