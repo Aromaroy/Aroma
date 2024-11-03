@@ -110,14 +110,7 @@ async def monitor_chat_member(client, chat_member_updated):
         return
 
     new_member = chat_member_updated.new_chat_member
-    if new_member is None:
-        logger.info("New member is None.")
-        return
-
-    logger.info(f"Member update detected for user {new_member.user.id} with status {new_member.status} in chat {chat_id}.")
-
-    if new_member.status != ChatMemberStatus.MEMBER:
-        logger.info(f"User {new_member.user.id} is not a MEMBER. Current status: {new_member.status}.")
+    if new_member is None or new_member.status != ChatMemberStatus.MEMBER:
         return
 
     if new_member.user.id not in raid_settings['new_members']:
@@ -133,15 +126,11 @@ async def monitor_chat_member(client, chat_member_updated):
                 except Exception as e:
                     logger.error(f"Failed to ban user {user_id}: {e}")
 
-            # Clear new_members list after banning
-            raid_collection.update_one({"chat_id": chat_id}, {"$set": {"new_members": [], "last_check_time": datetime.now()}})
-            logger.info(f"New members list cleared for chat {chat_id}.")
-            return
+            await reset_raid(chat_id)
 
     now = datetime.now()
     if (now - raid_settings['last_check_time']).seconds >= 60:
         logger.info(f"Checking new members in chat {chat_id}: {len(raid_settings['new_members'])} found.")
-
         if len(raid_settings['new_members']) > raid_settings['user_limit']:
             logger.info(f"User limit exceeded during scheduled check: {len(raid_settings['new_members'])} > {raid_settings['user_limit']}. Banning users.")
             for user_id in raid_settings['new_members']:
@@ -151,9 +140,7 @@ async def monitor_chat_member(client, chat_member_updated):
                 except Exception as e:
                     logger.error(f"Failed to ban user {user_id}: {e}")
 
-            # Clear new_members list after banning
-            raid_collection.update_one({"chat_id": chat_id}, {"$set": {"new_members": [], "last_check_time": now}})
-            logger.info(f"New members list cleared for chat {chat_id}.")
+            await reset_raid(chat_id)
 
 def convert_duration_to_seconds(duration_str):
     time_value = int(duration_str[:-1])
@@ -169,6 +156,7 @@ def convert_duration_to_seconds(duration_str):
         return float('inf')
     else:
         return None
+
 
 async def reset_raid(chat_id):
     raid_collection.delete_one({"chat_id": chat_id})
