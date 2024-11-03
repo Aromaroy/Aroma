@@ -85,7 +85,7 @@ async def antiraid(client, message):
     ])
 )
 
-@app.on_callback_query()
+@app.on_callback_query(filters.regex(r'^(enable_raid|cancel_raid):'))
 async def handle_callback_query(client, callback_query):
     chat_id = callback_query.message.chat.id
     data = callback_query.data
