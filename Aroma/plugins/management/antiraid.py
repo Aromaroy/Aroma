@@ -150,35 +150,38 @@ async def monitor_chat_member(client, chat_member_updated):
         return
 
     new_member = chat_member_updated.new_chat_member
-    if new_member is None:
-        logger.info("No new member data available.")
+    if new_member is None or new_member.status != ChatMemberStatus.MEMBER:
+        logger.info("No new member data available or user is not a MEMBER.")
         return
 
-    if new_member.status != ChatMemberStatus.MEMBER:
-        logger.info(f"User {new_member.user.id} is not a MEMBER. Current status: {new_member.status}.")
-        return
+    # Fetch existing members (optional, consider efficiency)
+    existing_members = await client.get_chat_members(chat_id)
+    existing_member_ids = {member.user.id for member in existing_members}
 
-    logger.info(f"Member update detected for user {new_member.user.id} in chat {chat_id}.")
-
-    raid_collection.update_one(
-        {"chat_id": chat_id},
-        {"$addToSet": {"new_members": new_member.user.id}}
-    )
+    # Only add if they are not already part of the group
+    if new_member.user.id not in existing_member_ids:
+        raid_collection.update_one(
+            {"chat_id": chat_id},
+            {"$addToSet": {"new_members": new_member.user.id}}
+        )
 
     updated_settings = raid_collection.find_one({"chat_id": chat_id})
-    logger.info(f"Total new members: {len(updated_settings['new_members'])}")
-
+    
     if len(updated_settings['new_members']) > updated_settings['user_limit']:
-        logger.info(f"User limit exceeded: {len(updated_settings['new_members'])} > {updated_settings['user_limit']}. Banning users.")
-        for user_id in updated_settings['new_members']:
-            try:
-                await client.ban_chat_member(chat_id, user_id)
-                logger.info(f"Banned user {user_id} due to anti-raid.")
-            except Exception as e:
-                logger.error(f"Failed to ban user {user_id}: {e}")
+        await ban_users(client, chat_id, updated_settings['new_members'])
 
-        raid_collection.update_one({"chat_id": chat_id}, {"$set": {"new_members": [], "last_check_time": datetime.now()}})
-        logger.info(f"New members list cleared for chat {chat_id}.")
+async def ban_users(client, chat_id, user_ids):
+    for user_id in user_ids:
+        try:
+            await client.ban_chat_member(chat_id, user_id)
+            logger.info(f"Banned user {user_id} due to anti-raid.")
+        except Exception as e:
+            logger.error(f"Failed to ban user {user_id}: {e}")
+    await reset_new_members(chat_id)
+
+async def reset_new_members(chat_id):
+    raid_collection.update_one({"chat_id": chat_id}, {"$set": {"new_members": []}})
+    logger.info(f"New members list cleared for chat {chat_id}.")
 
 def convert_duration_to_seconds(duration_str):
     time_value = int(duration_str[:-1])
