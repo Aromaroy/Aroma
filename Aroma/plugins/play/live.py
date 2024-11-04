@@ -1,6 +1,6 @@
 from pyrogram import filters
 
-from aroma import YouTube, app
+from Aroma import YouTube, app
 from Aroma.utils.channelplay import get_channeplayCB
 from Aroma.utils.decorators.language import languageCB
 from Aroma.utils.stream.stream import stream
