@@ -154,8 +154,11 @@ async def monitor_chat_member(client, chat_member_updated):
         logger.info("No new member data available or user is not a MEMBER.")
         return
 
-    # Fetch existing members (optional, consider efficiency)
-    existing_members = await client.get_chat_members(chat_id)
+    # Collect existing members
+    existing_members = []
+    async for member in client.get_chat_members(chat_id):
+        existing_members.append(member)
+
     existing_member_ids = {member.user.id for member in existing_members}
 
     # Only add if they are not already part of the group
@@ -166,7 +169,7 @@ async def monitor_chat_member(client, chat_member_updated):
         )
 
     updated_settings = raid_collection.find_one({"chat_id": chat_id})
-    
+
     if len(updated_settings['new_members']) > updated_settings['user_limit']:
         await ban_users(client, chat_id, updated_settings['new_members'])
 
