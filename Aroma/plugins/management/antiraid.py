@@ -74,16 +74,15 @@ async def antiraid(client, message):
     previous_settings = raid_collection.find_one({"chat_id": chat_id})
 
     await message.reply(
-    f"Raid mode is currently disabled in {message.chat.title}.\n\n"
-
-    f"Would you like to enable raid mode for {format_duration(duration_seconds)} with a limit of {user_limit} users?\n\n",
-    reply_markup=InlineKeyboardMarkup([
-        [
-            InlineKeyboardButton("Enable raid", callback_data=f"enable_raid:{duration_seconds}:{user_limit}"),
-            InlineKeyboardButton("Cancel", callback_data="cancel_raid")
-        ]
-    ])
-)
+        f"Raid mode is currently disabled in {message.chat.title}.\n\n"
+        f"Would you like to enable raid mode for {format_duration(duration_seconds)} with a limit of {user_limit} users?\n\n",
+        reply_markup=InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton("Enable raid", callback_data=f"enable_raid:{duration_seconds}:{user_limit}"),
+                InlineKeyboardButton("Cancel", callback_data="cancel_raid")
+            ]
+        ])
+    )
 
 @app.on_callback_query(filters.regex(r'^(enable_raid|cancel_raid):'))
 async def handle_callback_query(client, callback_query):
@@ -149,35 +148,34 @@ async def monitor_chat_member(client, chat_member_updated):
         return
 
     new_member = chat_member_updated.new_chat_member
-    if new_member is None:
-        logger.info("No new member data available.")
+    if new_member is None or new_member.status != ChatMemberStatus.MEMBER:
         return
 
-    if new_member.status != ChatMemberStatus.MEMBER:
-        logger.info(f"User {new_member.user.id} is not a MEMBER. Current status: {new_member.status}.")
-        return
+    previous_member_status = chat_member_updated.old_chat_member.status
+    if previous_member_status == ChatMemberStatus.LEFT:
+        # Only treat them as new if they have just joined
+        logger.info(f"Member update detected for user {new_member.user.id} in chat {chat_id}.")
 
-    logger.info(f"Member update detected for user {new_member.user.id} in chat {chat_id}.")
+        # Add to new_members only if they just joined
+        raid_collection.update_one(
+            {"chat_id": chat_id},
+            {"$addToSet": {"new_members": new_member.user.id}}
+        )
 
-    raid_collection.update_one(
-        {"chat_id": chat_id},
-        {"$addToSet": {"new_members": new_member.user.id}}
-    )
+        updated_settings = raid_collection.find_one({"chat_id": chat_id})
+        logger.info(f"Total new members: {len(updated_settings['new_members'])}")
 
-    updated_settings = raid_collection.find_one({"chat_id": chat_id})
-    logger.info(f"Total new members: {len(updated_settings['new_members'])}")
+        if len(updated_settings['new_members']) > updated_settings['user_limit']:
+            logger.info(f"User limit exceeded: {len(updated_settings['new_members'])} > {updated_settings['user_limit']}. Banning users.")
+            for user_id in updated_settings['new_members']:
+                try:
+                    await client.ban_chat_member(chat_id, user_id)
+                    logger.info(f"Banned user {user_id} due to anti-raid.")
+                except Exception as e:
+                    logger.error(f"Failed to ban user {user_id}: {e}")
 
-    if len(updated_settings['new_members']) > updated_settings['user_limit']:
-        logger.info(f"User limit exceeded: {len(updated_settings['new_members'])} > {updated_settings['user_limit']}. Banning users.")
-        for user_id in updated_settings['new_members']:
-            try:
-                await client.ban_chat_member(chat_id, user_id)
-                logger.info(f"Banned user {user_id} due to anti-raid.")
-            except Exception as e:
-                logger.error(f"Failed to ban user {user_id}: {e}")
-
-        raid_collection.update_one({"chat_id": chat_id}, {"$set": {"new_members": [], "last_check_time": datetime.now()}})
-        logger.info(f"New members list cleared for chat {chat_id}.")
+            raid_collection.update_one({"chat_id": chat_id}, {"$set": {"new_members": [], "last_check_time": datetime.now()}})
+            logger.info(f"New members list cleared for chat {chat_id}.")
 
 def convert_duration_to_seconds(duration_str):
     time_value = int(duration_str[:-1])
