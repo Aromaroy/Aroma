@@ -55,7 +55,7 @@ async def antiraid(client, message):
         if not user_member.privileges.can_change_info or not user_member.privileges.can_restrict_members:
             await message.reply("You need permission to change group info and restrict users.")
             return
-    elif user_member.status != ChatMemberStatus.CREATOR:
+    elif user_member.status != ChatMemberStatus.ADMINISTRATOR:
         await message.reply("You are not an admin in this group.")
         return
 
