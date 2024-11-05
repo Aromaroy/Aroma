@@ -43,6 +43,19 @@ GIT_TOKEN = getenv(
 SUPPORT_CHANNEL = "https://t.me/arona_update"
 SUPPORT_CHAT = "https://t.me/phoenixXsupport"
 
+BOT_SESSIONS = [
+    {
+        "string": "hmm",  # Replace with actual session string
+        "name": "Bot 1",
+        "user_id": 123456789
+    },
+    {
+        "string": "SESSION_STRING_2",  # Replace with another session string
+        "name": "Bot 2",
+        "user_id": 987654321
+    },
+]
+
 # Set this to True if you want the assistant to automatically leave chats after an interval
 AUTO_LEAVING_ASSISTANT = bool(getenv("AUTO_LEAVING_ASSISTANT", False))
 
