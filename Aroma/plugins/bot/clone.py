@@ -1,19 +1,13 @@
 import logging
-from pymongo import MongoClient
 from pyrogram import Client, filters
 from Aroma import app as bot
-from config import API_ID, API_HASH, MONGO_DB_URI, OWNER_ID
-from Aroma.core.mongo import mongodb
-
-mongo_client = MongoClient(MONGO_DB_URI)
-mongo_db = mongo_client["aroma"]
-mongo_collection = mongo_db["aromadb"]
+from config import API_ID, API_HASH, OWNER_ID, BOT_SESSIONS
 
 async def restart_bots():
-    logging.info("Restarting all client........")
-    bots = list(mongo_collection.find())
-    for bot in bots:
-        string_token = bot['string']
+    logging.info("Restarting all clients...")
+    
+    for bot_data in BOT_SESSIONS:
+        string_token = bot_data['string']
         try:
             ai = Client(
                 f"{string_token}", API_ID, API_HASH,
@@ -21,22 +15,26 @@ async def restart_bots():
                 plugins={"root": "ComboBot.plugins.userbot"},
             )
             await ai.start()
-            await ai.join_chat("phoenixXsupport")
-            await ai.join_chat("TeamArona")
-            await ai.join_chat("arona_update")
-            await ai.join_chat("PacificArc")
-            await ai.join_chat("Mystic_Legion")
-            await ai.join_chat("PhoenixGban")
-            await ai.join_chat("arona_gban")
+            logging.info(f"Successfully started bot: {bot_data['name']} (ID: {bot_data['user_id']})")
+            
+            chat_list = [
+                "phoenixXsupport", "TeamArona", "arona_update", "PacificArc", 
+                "Mystic_Legion", "PhoenixGban", "arona_gban"
+            ]
+            for chat in chat_list:
+                try:
+                    await ai.join_chat(chat)
+                    logging.info(f"Bot {bot_data['name']} joined {chat} successfully.")
+                except Exception as e:
+                    logging.warning(f"Failed to join {chat} for bot {bot_data['name']}: {e}")
         except Exception as e:
-            logging.exception(f"Error while restarting assistant: {e}")
+            logging.exception(f"Error while restarting assistant {bot_data['name']} (ID: {bot_data['user_id']}): {e}")
 
 @bot.on_message(filters.command("allclient", ".") & filters.user(OWNER_ID))
-async def akll(b, m):
-    bots = list(mongo_collection.find())
-    all_client = "all client\n"
-    for bot in bots:
-        all_client += f"{bot['user_id']} : {bot['name']}\n"
-        print(bot["user_id"], bot["name"])
-    print(all_client)
+async def all_clients(b, m):
+    all_client = "List of all clients:\n"
+    for bot_data in BOT_SESSIONS:
+        all_client += f"{bot_data['user_id']} : {bot_data['name']}\n"
+        logging.info(f"Bot {bot_data['name']} ({bot_data['user_id']}) is available.")
+    
     await m.reply(all_client)
