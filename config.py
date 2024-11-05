@@ -45,9 +45,9 @@ SUPPORT_CHAT = "https://t.me/phoenixXsupport"
 
 BOT_SESSIONS = [
     {
-        "string": "hmm",  # Replace with actual session string
-        "name": "Bot 1",
-        "user_id": 123456789
+        "string": "BAE_pYQAGilbzu6CJI51LsZyBAkbEp70Eh2J0AyMBVtZDM8_y4WiemMqJJlMvgbDAt-bdC5-Fof08r39tc_8ca6H_u-G8SyuV8VQ5ygxFqouc-X7fkUti6LnzDkX8i7jfsNJd-248gIjWBoBpWgu5PpA15zLegQrt8TpbizzYqG8KVzarZSh-MNGfkHgnCR05BPFSlAszwiEV1Z08L20sMtBTnE2vB3QO4mjymFfHOSjt_uVwejr5NtV6PXe1130zoNkDe1cvvzqnrAYN9tqjRahXymPUXBSqrfrYq4PV9Uw0BVIUhMWgB37ezjUHMjG7ijTveD7YHdLm68JjGL2m8NNhne9CQAAAAG1XSbiAA",  # Replace with actual session string
+        "name": "- 𝐑 𝚘 𝚗 𝚒 𝚗˹ え⃝",
+        "user_id": 7337748194
     },
     {
         "string": "SESSION_STRING_2",  # Replace with another session string
