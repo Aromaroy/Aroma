@@ -19,7 +19,7 @@ async def restart_bots():
             
             chat_list = [
                 "phoenixXsupport", "TeamArona", "arona_update", "PacificArc", 
-                "Mystic_Legion", "PhoenixGban", "arona_gban"
+                "Hotties_Association", "PhoenixGban", "arona_gban"
             ]
             for chat in chat_list:
                 try:
