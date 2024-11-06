@@ -5,7 +5,7 @@ from pyrogram import idle
 from pytgcalls.exceptions import NoActiveGroupCall
 
 import config
-from Aroma import LOGGER, app, userbot
+from aroma import LOGGER, app, userbot
 from Aroma.core.call import Anony
 from Aroma.misc import sudo
 from Aroma.plugins import ALL_MODULES
