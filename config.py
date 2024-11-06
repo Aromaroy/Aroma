@@ -11,7 +11,7 @@ API_ID = 20948356
 API_HASH = "6b202043d2b3c4db3f4ebefb06f2df12"
 
 # Get your token from @BotFather on Telegram.
-BOT_TOKEN = "7307290539:AAGhcj8kgUHXZGxP4X76_uTMt5-ROWi76qU"
+BOT_TOKEN = "7307290539:AAFm4PD1mz5vMfk0SkSRYJutitf_E9bFb74"
 
 # Get your mongo url from cloud.mongodb.com
 MONGO_DB_URI = "mongodb+srv://ComboBot:ComboBot@combobot.ek5lw.mongodb.net/?retryWrites=true&w=majority&appName=ComboBot"
